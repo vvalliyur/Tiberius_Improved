@@ -1,0 +1,165 @@
+.detailed-agent-report-page {
+  padding: 2rem;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.agents-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.agent-section {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.agent-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.agent-info h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.agent-id,
+.deal-percent {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.agent-summary {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.summary-value.highlight {
+  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.players-table-container {
+  overflow-x: auto;
+}
+
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.players-table thead {
+  background: #f9fafb;
+}
+
+.players-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.players-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.players-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.players-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.agent-tips-cell {
+  font-weight: 600;
+  color: #059669;
+}
+
+@media (max-width: 768px) {
+  .agent-header {
+    flex-direction: column;
+  }
+
+  .agent-summary {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .players-table-container {
+    font-size: 0.875rem;
+  }
+
+  .players-table th,
+  .players-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
