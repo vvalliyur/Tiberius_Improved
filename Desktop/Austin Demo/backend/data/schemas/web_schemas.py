@@ -14,7 +14,9 @@ class UpsertPlayerRequest(BaseModel):
     player_name: str
     agent_id: int | None = None
     credit_limit: float | None = None
+    weekly_credit_adjustment: float = 0.0
     notes: str | None = None
     comm_channel: str | None = None
     payment_methods: str | None = None
+    is_blocked: bool = False
 

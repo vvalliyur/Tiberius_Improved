@@ -15,9 +15,11 @@ function Players() {
     player_name: '',
     agent_id: '',
     credit_limit: '',
+    weekly_credit_adjustment: '',
     comm_channel: '',
     notes: '',
     payment_methods: '',
+    do_not_allow: false,
   });
 
   const columns = [
@@ -25,6 +27,11 @@ function Players() {
     { accessorKey: 'player_name', header: 'Player Name' },
     { accessorKey: 'agent_id', header: 'Agent ID' },
     { accessorKey: 'credit_limit', header: 'Credit Limit' },
+    { accessorKey: 'weekly_credit_adjustment', header: 'Weekly Credit Adjustment', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : '0.00';
+    }},
+    { accessorKey: 'is_blocked', header: 'Do Not Allow', cell: info => info.getValue() ? 'Yes' : 'No' },
     { accessorKey: 'comm_channel', header: 'Comm Channel' },
     { accessorKey: 'notes', header: 'Notes' },
     { accessorKey: 'payment_methods', header: 'Payment Methods' },
@@ -75,9 +82,11 @@ function Players() {
       player_name: player.player_name || '',
       agent_id: player.agent_id || '',
       credit_limit: player.credit_limit || '',
+      weekly_credit_adjustment: player.weekly_credit_adjustment !== undefined && player.weekly_credit_adjustment !== null ? player.weekly_credit_adjustment : '',
       comm_channel: player.comm_channel || '',
       notes: player.notes || '',
       payment_methods: player.payment_methods || '',
+      do_not_allow: player.is_blocked || false,
     });
     setIsUpdateMode(true);
     setIsFormOpen(true);
@@ -94,9 +103,11 @@ function Players() {
         player_name: formData.player_name,
         agent_id: formData.agent_id ? parseInt(formData.agent_id) : null,
         credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : null,
+        weekly_credit_adjustment: formData.weekly_credit_adjustment ? parseFloat(formData.weekly_credit_adjustment) : 0.0,
         comm_channel: formData.comm_channel || null,
         notes: formData.notes || null,
         payment_methods: formData.payment_methods || null,
+        is_blocked: formData.do_not_allow,
       };
 
       await upsertPlayer(submitData);
@@ -117,23 +128,25 @@ function Players() {
       player_name: '',
       agent_id: '',
       credit_limit: '',
+      weekly_credit_adjustment: '',
       comm_channel: '',
       notes: '',
       payment_methods: '',
+      do_not_allow: false,
     });
   };
 
   const handleChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     });
   };
 
   return (
     <div className="players-page">
       <div className="page-header">
-        <h1>Players</h1>
         <button onClick={() => setIsFormOpen(true)} className="create-button">
           Create Player
         </button>
@@ -193,6 +206,16 @@ function Players() {
                 />
               </div>
               <div className="form-group">
+                <label>Weekly Credit Adjustment</label>
+                <input
+                  type="number"
+                  name="weekly_credit_adjustment"
+                  value={formData.weekly_credit_adjustment}
+                  onChange={handleChange}
+                  step="0.01"
+                />
+              </div>
+              <div className="form-group">
                 <label>Comm Channel</label>
                 <input
                   type="text"
@@ -219,6 +242,17 @@ function Players() {
                   onChange={handleChange}
                 />
               </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    name="do_not_allow"
+                    checked={formData.do_not_allow}
+                    onChange={handleChange}
+                  />
+                  {' '}Do Not Allow
+                </label>
+              </div>
               <div className="form-actions">
                 <button type="submit" disabled={isLoading} className="submit-button">
                   {isLoading ? 'Saving...' : isUpdateMode ? 'Update' : 'Create'}
@@ -236,7 +270,7 @@ function Players() {
         data={players}
         columns={columns}
         isLoading={isLoading}
-        emptyMessage="No players found. Create your first player."
+        emptyMessage="No players found. Create your first player"
       />
     </div>
   );

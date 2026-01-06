@@ -19,23 +19,30 @@
 }
 
 .summary-card {
-  background: white;
+  background: hsl(var(--card));
   padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid hsl(var(--border));
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .summary-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: hsl(var(--muted-foreground));
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
 
 .summary-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
 }
 
 .error-message {
@@ -47,12 +54,20 @@
 }
 
 .profit-positive {
-  color: #059669;
+  color: hsl(142, 76%, 36%);
   font-weight: 500;
 }
 
 .profit-negative {
-  color: #dc2626;
+  color: hsl(0, 84%, 60%);
   font-weight: 500;
+}
+
+.agent-report-table-wrapper :global(thead th.text-center) {
+  text-align: center !important;
+}
+
+.agent-report-table-wrapper :global(tbody td.text-center) {
+  text-align: center !important;
 }
 

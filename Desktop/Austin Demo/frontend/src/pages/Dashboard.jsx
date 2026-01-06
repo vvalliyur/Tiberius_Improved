@@ -1,161 +1,216 @@
-import { useState, useMemo } from 'react';
-import { getData, getAggregatedData } from '../utils/api';
+import { useState, useEffect, useMemo } from 'react';
+import { getDashboardData } from '../utils/api';
 import DataTable from '../components/DataTable';
-import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import './Dashboard.css';
 
 function Dashboard() {
-  const [activeTab, setActiveTab] = useState('game-data');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [lookbackDays, setLookbackDays] = useState(null);
-  const [clubCode, setClubCode] = useState('');
-  const [gameData, setGameData] = useState([]);
-  const [aggregatedData, setAggregatedData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState({
+    tips_stats: { total_all_time: 0, previous_period: 0, since_last_thursday: 0 },
+    blocked_players: [],
+    over_credit_limit_players: [],
+    agent_report: [],
+    player_aggregates: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const gameDataColumns = useMemo(() => [
-    { accessorKey: 'game_code', header: 'Game Code' },
-    { accessorKey: 'club_code', header: 'Club Code' },
-    { accessorKey: 'player_id', header: 'Player ID' },
-    { accessorKey: 'player_name', header: 'Player Name' },
-    { accessorKey: 'date_started', header: 'Date Started', cell: info => new Date(info.getValue()).toLocaleString() },
-    { accessorKey: 'date_ended', header: 'Date Ended', cell: info => new Date(info.getValue()).toLocaleString() },
-    { accessorKey: 'game_type', header: 'Game Type' },
-    { accessorKey: 'big_blind', header: 'Big Blind', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'profit', header: 'Profit', cell: info => {
-      const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
-    }},
-    { accessorKey: 'tips', header: 'Tips', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'buy_in', header: 'Buy In', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
-  ], []);
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getDashboardData();
+        setDashboardData(data);
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message || 'Failed to fetch dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
-  const aggregatedDataColumns = useMemo(() => [
+  const playerColumns = useMemo(() => [
     { accessorKey: 'player_id', header: 'Player ID' },
     { accessorKey: 'player_name', header: 'Player Name' },
+    { accessorKey: 'agent_name', header: 'Agent Name' },
+    { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+    }},
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
       return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
     }},
     { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'game_count', header: 'Game Count' },
   ], []);
 
-  const handleFetchGameData = async () => {
-    if (!clubCode && !lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days, and club code for game data');
-      return;
-    }
+  const blockedPlayersColumns = useMemo(() => [
+    { accessorKey: 'player_id', header: 'Player ID' },
+    { accessorKey: 'player_name', header: 'Player Name' },
+    { accessorKey: 'agent_name', header: 'Agent Name' },
+    { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+    }},
+    { accessorKey: 'comm_channel', header: 'Comm Channel' },
+    { accessorKey: 'notes', header: 'Notes' },
+  ], []);
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await getData(startDate || null, endDate || null, lookbackDays, clubCode || null);
-      setGameData(response.data || []);
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to fetch game data');
-      setGameData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const overCreditLimitColumns = useMemo(() => [
+    { accessorKey: 'player_id', header: 'Player ID' },
+    { accessorKey: 'player_name', header: 'Player Name' },
+    { accessorKey: 'agent_name', header: 'Agent Name' },
+    { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+    }},
+    { accessorKey: 'weekly_credit_adjustment', header: 'Weekly Adjustment', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : '0.00';
+    }},
+    { accessorKey: 'adjusted_credit_limit', header: 'Adjusted Credit Limit', cell: info => {
+      const value = info.getValue();
+      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+    }},
+    { accessorKey: 'period_profit', header: 'Profit Since Start of Week', cell: info => {
+      const value = Number(info.getValue());
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+    }},
+  ], []);
 
-  const handleFetchAggregatedData = async () => {
-    if (!lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days');
-      return;
-    }
+  const agentColumns = useMemo(() => [
+    { accessorKey: 'agent_id', header: 'Agent ID' },
+    { accessorKey: 'agent_name', header: 'Agent Name' },
+    { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
+      const value = Number(info.getValue());
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+    }},
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => Number(info.getValue()).toFixed(2) },
+  ], []);
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await getAggregatedData(startDate || null, endDate || null, lookbackDays);
-      setAggregatedData(response.data || []);
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to fetch aggregated data');
-      setAggregatedData([]);
-    } finally {
-      setIsLoading(false);
+  const getRowClassName = (row) => {
+    if (row.original.is_below_credit) {
+      return 'bg-red-100 dark:bg-red-900/20';
     }
-  };
-
-  const handleFetch = () => {
-    if (activeTab === 'game-data') {
-      handleFetchGameData();
-    } else {
-      handleFetchAggregatedData();
-    }
+    return '';
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
+    <div className="space-y-8 w-full" data-page-container style={{ minHeight: '1000px' }}>
+      <div className="space-y-2 h-[88px] flex flex-col justify-center flex-shrink-0">
         <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-lg text-muted-foreground">View game data and aggregated statistics</p>
+        <p className="text-lg text-muted-foreground">Overview of tips, players, and agents</p>
       </div>
 
-      <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
-        <button
-          className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-            activeTab === 'game-data'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('game-data')}
-        >
-          Game Data
-        </button>
-        <button
-          className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-            activeTab === 'aggregated'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('aggregated')}
-        >
-          Aggregated Data
-        </button>
+      <div className="min-h-[60px] flex items-center flex-shrink-0">
+        {error && (
+          <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm w-full">
+            {error}
+          </div>
+        )}
       </div>
 
-      <DateRangeFilter
-        startDate={startDate}
-        endDate={endDate}
-        lookbackDays={lookbackDays}
-        clubCode={clubCode}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-        onLookbackDaysChange={setLookbackDays}
-        onClubCodeChange={setClubCode}
-        onFetch={handleFetch}
-        isLoading={isLoading}
-        showClubCode={activeTab === 'game-data'}
-      />
+      <div className="grid gap-4 md:grid-cols-3 flex-shrink-0">
+        <Card className="h-[120px] flex flex-col">
+          <CardHeader className="flex-1 flex flex-col justify-center">
+            <CardDescription className="mb-2">Total Tips (All Time)</CardDescription>
+            <CardTitle className="text-2xl font-bold leading-tight">
+              {dashboardData.tips_stats.total_all_time.toFixed(2)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="h-[120px] flex flex-col">
+          <CardHeader className="flex-1 flex flex-col justify-center">
+            <CardDescription className="mb-2">Previous Week Tips</CardDescription>
+            <CardTitle className="text-2xl font-bold leading-tight">
+              {dashboardData.tips_stats.previous_period.toFixed(2)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card className="h-[120px] flex flex-col">
+          <CardHeader className="flex-1 flex flex-col justify-center">
+            <CardDescription className="mb-2">Since Start of Week</CardDescription>
+            <CardTitle className="text-2xl font-bold leading-tight">
+              {dashboardData.tips_stats.since_last_thursday.toFixed(2)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
 
-      {error && (
-        <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
-          {error}
-        </div>
+      {dashboardData.blocked_players?.length > 0 && (
+        <Card className="overflow-hidden flex-shrink-0">
+          <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+            <CardTitle className="text-2xl">Blocked Players</CardTitle>
+            <CardDescription className="text-base">
+              {dashboardData.blocked_players.length} blocked {dashboardData.blocked_players.length === 1 ? 'player' : 'players'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 flex-shrink-0">
+            <DataTable
+              data={dashboardData.blocked_players}
+              columns={blockedPlayersColumns}
+              isLoading={isLoading}
+              emptyMessage="No blocked players"
+            />
+          </CardContent>
+        </Card>
       )}
 
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b">
-          <CardTitle className="text-2xl">
-            {activeTab === 'game-data' ? 'Game Data' : 'Aggregated Data by Player'}
-          </CardTitle>
+      {dashboardData.over_credit_limit_players?.length > 0 && (
+        <Card className="overflow-hidden flex-shrink-0">
+          <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+            <CardTitle className="text-2xl">Players Over Credit Limit</CardTitle>
+            <CardDescription className="text-base">
+              {dashboardData.over_credit_limit_players.length} {dashboardData.over_credit_limit_players.length === 1 ? 'player' : 'players'} over limit
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 flex-shrink-0">
+            <DataTable
+              data={dashboardData.over_credit_limit_players}
+              columns={overCreditLimitColumns}
+              isLoading={isLoading}
+              emptyMessage="No players over credit limit"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="overflow-hidden flex-shrink-0">
+        <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+          <CardTitle className="text-2xl">Agent Report</CardTitle>
           <CardDescription className="text-base">
-            Showing {activeTab === 'game-data' ? gameData.length : aggregatedData.length}{' '}
-            {activeTab === 'game-data' ? 'records' : 'players'}
+            {dashboardData.agent_report.length} agents
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-6 flex-shrink-0">
           <DataTable
-            data={activeTab === 'game-data' ? gameData : aggregatedData}
-            columns={activeTab === 'game-data' ? gameDataColumns : aggregatedDataColumns}
+            data={dashboardData.agent_report}
+            columns={agentColumns}
             isLoading={isLoading}
-            emptyMessage={`No ${activeTab === 'game-data' ? 'game data' : 'aggregated data'} available.`}
+            emptyMessage="No agent data available"
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden flex-shrink-0">
+        <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+          <CardTitle className="text-2xl">Player Aggregates</CardTitle>
+          <CardDescription className="text-base">
+            {dashboardData.player_aggregates.length} players
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 flex-shrink-0">
+          <DataTable
+            data={dashboardData.player_aggregates}
+            columns={playerColumns}
+            isLoading={isLoading}
+            emptyMessage="No player data available"
+            getRowClassName={getRowClassName}
           />
         </CardContent>
       </Card>
@@ -164,4 +219,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

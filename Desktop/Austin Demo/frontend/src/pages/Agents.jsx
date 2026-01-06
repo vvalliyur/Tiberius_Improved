@@ -21,7 +21,7 @@ function Agents() {
   const columns = [
     { accessorKey: 'agent_id', header: 'Agent ID' },
     { accessorKey: 'agent_name', header: 'Agent Name' },
-    { accessorKey: 'deal_percent', header: 'Deal %', cell: info => `${info.getValue()}%` },
+    { accessorKey: 'deal_percent', header: 'Deal %', cell: info => `${(Number(info.getValue()) * 100).toFixed(2)}%` },
     { accessorKey: 'comm_channel', header: 'Comm Channel' },
     { accessorKey: 'notes', header: 'Notes' },
     { accessorKey: 'payment_methods', header: 'Payment Methods' },
@@ -117,7 +117,6 @@ function Agents() {
   return (
     <div className="agents-page">
       <div className="page-header">
-        <h1>Agents</h1>
         <button onClick={() => setIsFormOpen(true)} className="create-button">
           Create Agent
         </button>
@@ -206,7 +205,7 @@ function Agents() {
         data={agents}
         columns={columns}
         isLoading={isLoading}
-        emptyMessage="No agents found. Create your first agent."
+        emptyMessage="No agents found. Create your first agent"
       />
     </div>
   );

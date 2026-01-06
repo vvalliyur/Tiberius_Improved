@@ -139,7 +139,7 @@ function DetailedAgentReport() {
         </div>
       ) : (
         <div className="empty-message">
-          No detailed agent report data available. Adjust filters or upload game data.
+          No detailed agent report data available. Adjust filters or upload game data
         </div>
       )}
     </div>

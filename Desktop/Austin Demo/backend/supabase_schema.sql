@@ -20,9 +20,11 @@ CREATE TABLE IF NOT EXISTS players (
     player_name VARCHAR(255) NOT NULL,
     agent_id INTEGER REFERENCES agents(agent_id) ON DELETE SET NULL,
     credit_limit DECIMAL(10, 2),
+    weekly_credit_adjustment DECIMAL(10, 2) NOT NULL DEFAULT 0,
     notes TEXT,
     comm_channel VARCHAR(255),
     payment_methods TEXT,
+    is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

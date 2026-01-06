@@ -8,14 +8,15 @@ if str(backend_dir) not in sys.path:
 from fastapi import FastAPI, HTTPException, Query, Path, UploadFile, File, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
-from datetime import date
+from datetime import date, datetime, timedelta
+import pytz
 from supabase.client import create_client, Client
 import os
 from dotenv import load_dotenv
 import polars as pl
 from data.schemas.df_schemas import User, GameDataS, AgentS, PlayerS
 from utils.auth_utils import create_get_current_user
-from utils.datetime_utils import resolve_date_range
+from utils.datetime_utils import resolve_date_range, get_last_thursday_12am_texas
 from data.schemas.web_schemas import UpsertAgentRequest, UpsertPlayerRequest
 from data.csv_upload import upload_csv_to_games
 from utils.audit_log import log_operation
@@ -207,6 +208,50 @@ async def get_detailed_agent_report(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get('/get_agent_reports')
+async def get_agent_reports(
+    start_date: date | None = Query(None, description="Start date for the query"),
+    end_date: date | None = Query(None, description="End date for the query"),
+    lookback_days: int | None = Query(None, description="Optional lookback period in days"),
+    current_user: User = Depends(get_current_user),
+):
+    """Combined endpoint that returns both aggregated and detailed agent reports in one call."""
+    try:
+        resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
+        
+        # Get both reports in parallel
+        aggregated_response = supabase.rpc(
+            'get_agent_report',
+            {
+                'start_date_param': resolved_start.isoformat(),
+                'end_date_param': resolved_end.isoformat()
+            }
+        ).execute()
+        
+        detailed_response = supabase.rpc(
+            'get_detailed_agent_report',
+            {
+                'start_date_param': resolved_start.isoformat(),
+                'end_date_param': resolved_end.isoformat()
+            }
+        ).execute()
+        
+        return {
+            'aggregated': {
+                'data': aggregated_response.data,
+                'count': len(aggregated_response.data)
+            },
+            'detailed': {
+                'data': detailed_response.data,
+                'count': len(detailed_response.data)
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get('/get_player_history')
 async def get_player_history(
     start_date: date | None = Query(None, description="Start date for the query"),
@@ -224,9 +269,9 @@ async def get_player_history(
             resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
             query = query.gte('date_started', resolved_start.isoformat()).lte('date_ended', resolved_end.isoformat())
         
-        response = query.execute()
+        games_response = query.execute()
         
-        if not response.data:
+        if not games_response.data:
             return {
                 "aggregated": [],
                 "individual_records": [],
@@ -234,59 +279,75 @@ async def get_player_history(
                 "individual_count": 0
             }
         
-        df = response_to_lazyframe(response.data)
+        # Convert to polars dataframes
+        games_df = response_to_lazyframe(games_response.data)
         
-        unique_player_ids_from_games = df.select('player_id').unique().collect().to_series().to_list()
-        numeric_player_ids = []
-        for pid in unique_player_ids_from_games:
-            try:
-                numeric_player_ids.append(int(pid))
-            except (ValueError, TypeError):
-                continue
+        # Get all players data (we'll filter/join in Polars)
+        players_response = supabase.table(TABLE_PLAYERS).select('player_id, agent_id').execute()
+        players_df = None
+        agents_df = None
         
-        players_dict = {}
-        player_id_to_agent = {}
-        if numeric_player_ids:
-            players_response = supabase.table(TABLE_PLAYERS).select('player_id, agent_id').in_('player_id', numeric_player_ids).execute()
-            for p in players_response.data:
-                player_id_int = p['player_id']
-                player_id_str = str(player_id_int)
-                players_dict[player_id_str] = p.get('agent_id')
-                player_id_to_agent[player_id_str] = p.get('agent_id')
+        if players_response.data:
+            players_df = response_to_lazyframe(players_response.data)
+            players_df = players_df.select([
+                pl.col('player_id').cast(pl.Utf8).alias('player_id_str'),
+                pl.col('agent_id')
+            ])
+            
+            # Get unique agent_ids from players
+            agent_ids = response_to_lazyframe(players_response.data).select('agent_id').unique().filter(pl.col('agent_id').is_not_null()).collect().to_series().to_list()
+            if agent_ids:
+                agents_response = supabase.table(TABLE_AGENTS).select('agent_id, deal_percent').in_('agent_id', agent_ids).execute()
+                if agents_response.data:
+                    agents_df = response_to_lazyframe(agents_response.data)
         
-        agent_ids = [a for a in players_dict.values() if a is not None]
-        agents_dict = {}
-        if agent_ids:
-            agents_response = supabase.table(TABLE_AGENTS).select('agent_id, deal_percent').in_('agent_id', agent_ids).execute()
-            for a in agents_response.data:
-                agents_dict[a['agent_id']] = float(a.get('deal_percent', 0))
+        if players_df is not None:
+            games_with_players = games_df.join(
+                players_df,
+                left_on='player_id',
+                right_on='player_id_str',
+                how='left'
+            )
+        else:
+            games_with_players = games_df.with_columns(pl.lit(None).cast(pl.Int64).alias('agent_id'))
         
+        if agents_df is not None:
+            games_with_agents = games_with_players.join(
+                agents_df,
+                on='agent_id',
+                how='left'
+            )
+        else:
+            # If no agents found, add null deal_percent column
+            games_with_agents = games_with_players.with_columns(pl.lit(None).cast(pl.Float64).alias('deal_percent'))
+        
+        df_with_agent_tips = games_with_agents.with_columns([
+            (pl.col('tips') * pl.col('deal_percent').fill_null(0)).alias('agent_tips')
+        ])
+        
+        # Aggregate by player_id
         aggregated = (
-            df
+            df_with_agent_tips
             .group_by('player_id', 'player_name')
             .agg([
                 pl.sum('profit').alias('total_profit'),
                 pl.sum('tips').alias('total_tips'),
+                pl.sum('agent_tips').alias('agent_tips'),
+                pl.sum('hands').alias('total_hands'),
                 pl.count().alias('game_count')
+            ])
+            .with_columns([
+                (pl.col('total_tips') - pl.col('agent_tips')).alias('takehome_tips')
+            ])
+            .with_columns([
+                pl.col('agent_tips').round(2),
+                pl.col('takehome_tips').round(2)
             ])
             .collect()
         )
         
-        aggregated_list = aggregated.to_dicts()
-        
-        for item in aggregated_list:
-            player_id_str = str(item['player_id'])
-            agent_id = player_id_to_agent.get(player_id_str)
-            total_tips = float(item['total_tips'])
-            if agent_id and agent_id in agents_dict:
-                deal_percent = agents_dict[agent_id]
-                item['agent_tips'] = round(total_tips * deal_percent / 100.0, 2)
-            else:
-                item['agent_tips'] = 0.0
-            item['takehome_tips'] = round(total_tips - item['agent_tips'], 2)
-        
-        aggregated_data = aggregated_list
-        individual_records = response.data
+        aggregated_data = aggregated.to_dicts()
+        individual_records = games_response.data
         
         return {
             "aggregated": aggregated_data,
@@ -365,11 +426,14 @@ async def upsert_player(player_data: UpsertPlayerRequest, current_user: User = D
             'player_name': player_data.player_name,
             'agent_id': player_data.agent_id,
             'credit_limit': player_data.credit_limit,
+            'weekly_credit_adjustment': player_data.weekly_credit_adjustment,
             'notes': player_data.notes,
             'comm_channel': player_data.comm_channel,
-            'payment_methods': player_data.payment_methods
+            'payment_methods': player_data.payment_methods,
+            'is_blocked': player_data.is_blocked
         }
-        data = {k: v for k, v in data.items() if v is not None}
+        # Keep is_blocked and weekly_credit_adjustment even if False/0, but filter out None values for other fields
+        data = {k: v for k, v in data.items() if v is not None or k in ['is_blocked', 'weekly_credit_adjustment']}
         
         if player_data.player_id is not None:
             check_response = supabase.table(TABLE_PLAYERS).select('*').eq('player_id', player_data.player_id).execute()
@@ -440,6 +504,357 @@ async def get_create_update_history(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/get_dashboard_data')
+async def get_dashboard_data(current_user: User = Depends(get_current_user)):
+    """Get dashboard data including tips stats, player aggregates, and agent report"""
+    try:
+        # Get all games data
+        all_games_response = supabase.table(TABLE_GAMES).select('*').execute()
+        all_games_df = response_to_lazyframe(all_games_response.data)
+        
+        # Calculate total tips across all time using lazy frame
+        total_tips_all_time = 0.0
+        if all_games_response.data:
+            total_tips_result = (
+                all_games_df
+                .select(pl.sum('tips'))
+                .collect()
+            )
+            if total_tips_result.height > 0 and total_tips_result.row(0)[0] is not None:
+                total_tips_all_time = float(total_tips_result.row(0)[0])
+        
+        # Get last Thursday 12am Texas time
+        last_thursday_texas = get_last_thursday_12am_texas()
+        previous_thursday_texas = last_thursday_texas - timedelta(days=7)
+        
+        # Convert to UTC for database queries
+        last_thursday_utc = last_thursday_texas.astimezone(pytz.UTC)
+        previous_thursday_utc = previous_thursday_texas.astimezone(pytz.UTC)
+        last_thursday_iso = last_thursday_utc.isoformat()
+        previous_thursday_iso = previous_thursday_utc.isoformat()
+        
+        # Calculate total tips for previous period (previous Thursday to last Thursday) using lazy frame
+        previous_period_tips = 0.0
+        if all_games_response.data:
+            prev_period_result = (
+                all_games_df
+                .filter(
+                    (pl.col('date_started') >= previous_thursday_iso) &
+                    (pl.col('date_started') < last_thursday_iso)
+                )
+                .select(pl.sum('tips'))
+                .collect()
+            )
+            if prev_period_result.height > 0 and prev_period_result.row(0)[0] is not None:
+                previous_period_tips = float(prev_period_result.row(0)[0])
+        
+        # Calculate total tips since last Thursday using lazy frame
+        since_last_thursday_tips = 0.0
+        games_since_thursday_df = None
+        if all_games_response.data:
+            # First check if there are any records since last Thursday
+            games_since_thursday_df = all_games_df.filter(pl.col('date_started') >= last_thursday_iso)
+            since_thursday_result = (
+                games_since_thursday_df
+                .select(pl.sum('tips'))
+                .collect()
+            )
+            if since_thursday_result.height > 0 and since_thursday_result.row(0)[0] is not None:
+                since_last_thursday_tips = float(since_thursday_result.row(0)[0])
+            else:
+                # No records since last Thursday, set to None to skip processing
+                games_since_thursday_df = None
+        
+        # Get players and agents data
+        players_response = supabase.table(TABLE_PLAYERS).select('*').execute()
+        agents_response = supabase.table(TABLE_AGENTS).select('agent_id, agent_name, deal_percent').execute()
+        
+        # Get blocked players using Polars lazy frames
+        blocked_players = []
+        if players_response.data and agents_response.data:
+            players_df = response_to_lazyframe(players_response.data)
+            agents_df = response_to_lazyframe(agents_response.data)
+            
+            # Filter blocked players and join with agents
+            blocked_players_df = (
+                players_df
+                .filter(pl.col('is_blocked') == True)
+                .join(
+                    agents_df.select([
+                        pl.col('agent_id'),
+                        pl.col('agent_name')
+                    ]),
+                    on='agent_id',
+                    how='left'
+                )
+                .select([
+                    pl.col('player_id'),
+                    pl.col('player_name'),
+                    pl.col('agent_id'),
+                    pl.col('agent_name'),
+                    pl.col('credit_limit'),
+                    pl.col('comm_channel'),
+                    pl.col('notes')
+                ])
+                .collect()
+            )
+            
+            # Convert to list of dictionaries
+            blocked_players = blocked_players_df.to_dicts()
+            # Convert numeric values to proper types (keep player_id as string)
+            for item in blocked_players:
+                if item.get('credit_limit') is not None:
+                    item['credit_limit'] = float(item['credit_limit'])
+        
+        # Initialize empty results - will be populated only if there are records since last Thursday
+        player_aggregates = []
+        agent_report = []
+        over_credit_limit_players = []
+        
+        # Get players over credit limit since start of week
+        if games_since_thursday_df is not None and players_response.data and agents_response.data:
+            players_df = response_to_lazyframe(players_response.data)
+            agents_df = response_to_lazyframe(agents_response.data)
+            
+            # Aggregate games since last Thursday by player (using lazy frame)
+            games_agg_period = (
+                games_since_thursday_df
+                .group_by('player_id')
+                .agg([
+                    pl.sum('profit').alias('period_profit')
+                ])
+            )
+            
+            # Join with players to get credit limit and weekly adjustment
+            over_credit_df = (
+                games_agg_period
+                .join(
+                    players_df.select([
+                        pl.col('player_id').cast(pl.Utf8).alias('player_id'),
+                        pl.col('player_name'),
+                        pl.col('agent_id'),
+                        pl.col('credit_limit'),
+                        pl.col('weekly_credit_adjustment')
+                    ]),
+                    on='player_id',
+                    how='inner'
+                )
+                .join(
+                    agents_df.select([
+                        pl.col('agent_id'),
+                        pl.col('agent_name')
+                    ]),
+                    on='agent_id',
+                    how='left'
+                )
+                .with_columns([
+                    pl.col('credit_limit').cast(pl.Float64),
+                    pl.col('weekly_credit_adjustment').cast(pl.Float64),
+                    (pl.col('credit_limit') + pl.col('weekly_credit_adjustment')).alias('adjusted_credit_limit')
+                ])
+                .filter(
+                    pl.col('credit_limit').is_not_null() &
+                    (pl.col('period_profit') < -(pl.col('credit_limit') + pl.col('weekly_credit_adjustment')))
+                )
+                .select([
+                    pl.col('player_id'),
+                    pl.col('player_name'),
+                    pl.col('agent_id'),
+                    pl.col('agent_name'),
+                    pl.col('credit_limit'),
+                    pl.col('weekly_credit_adjustment'),
+                    pl.col('adjusted_credit_limit'),
+                    pl.col('period_profit')
+                ])
+                .collect()
+            )
+            
+            # Convert to list of dictionaries
+            over_credit_limit_players = over_credit_df.to_dicts()
+            # Convert numeric values to proper types (keep player_id as string)
+            for item in over_credit_limit_players:
+                item['period_profit'] = float(item['period_profit'])
+                if item.get('credit_limit') is not None:
+                    item['credit_limit'] = float(item['credit_limit'])
+                if item.get('weekly_credit_adjustment') is not None:
+                    item['weekly_credit_adjustment'] = float(item['weekly_credit_adjustment'])
+                if item.get('adjusted_credit_limit') is not None:
+                    item['adjusted_credit_limit'] = float(item['adjusted_credit_limit'])
+        
+        # Only process player aggregates and agent report if there are games since last Thursday
+        if games_since_thursday_df is not None and players_response.data and agents_response.data:
+            # Create lazy frames for joins
+            players_df = response_to_lazyframe(players_response.data)
+            agents_df = response_to_lazyframe(agents_response.data)
+            
+            # Aggregate all-time games by player for credit limit check (using lazy frame)
+            games_agg_all_time = (
+                all_games_df
+                .group_by('player_id')
+                .agg([pl.sum('profit').alias('all_time_profit')])
+            )
+            
+            # Aggregate games since last Thursday by player (using lazy frame)
+            games_agg_period = (
+                games_since_thursday_df
+                .group_by('player_id')
+                .agg([
+                    pl.sum('profit').alias('total_profit'),
+                    pl.sum('tips').alias('total_tips'),
+                    pl.count().alias('game_count')
+                ])
+            )
+            
+            # Join period aggregates with players and agents (using lazy frames)
+            player_aggregates_df = (
+                games_agg_period
+                .join(
+                    players_df.select([
+                        pl.col('player_id').cast(pl.Utf8).alias('player_id'),
+                        pl.col('player_name'),
+                        pl.col('agent_id'),
+                        pl.col('credit_limit'),
+                        pl.col('weekly_credit_adjustment')
+                    ]),
+                    on='player_id',
+                    how='inner'
+                )
+                .join(
+                    agents_df.select([
+                        pl.col('agent_id'),
+                        pl.col('agent_name'),
+                        pl.col('deal_percent')
+                    ]),
+                    on='agent_id',
+                    how='left'
+                )
+                .join(
+                    games_agg_all_time.select([
+                        pl.col('player_id'),
+                        pl.col('all_time_profit')
+                    ]),
+                    on='player_id',
+                    how='left'
+                )
+                .with_columns([
+                    pl.col('credit_limit').cast(pl.Float64),
+                    pl.col('weekly_credit_adjustment').cast(pl.Float64),
+                    (pl.col('credit_limit') + pl.col('weekly_credit_adjustment')).alias('adjusted_credit_limit'),
+                    pl.when(
+                        pl.col('credit_limit').is_not_null() & 
+                        (pl.col('all_time_profit') < -(pl.col('credit_limit') + pl.col('weekly_credit_adjustment')))
+                    )
+                    .then(True)
+                    .otherwise(False)
+                    .alias('is_below_credit')
+                ])
+                .select([
+                    pl.col('player_id'),
+                    pl.col('player_name'),
+                    pl.col('agent_id'),
+                    pl.col('agent_name'),
+                    pl.col('deal_percent'),
+                    pl.col('credit_limit'),
+                    pl.col('total_profit'),
+                    pl.col('total_tips'),
+                    pl.col('game_count').cast(pl.Int64),
+                    pl.col('is_below_credit')
+                ])
+                .collect()
+            )
+            
+            # Convert to list of dictionaries
+            player_aggregates = player_aggregates_df.to_dicts()
+            # Convert numeric values to proper types (keep player_id as string)
+            for item in player_aggregates:
+                item['total_profit'] = float(item['total_profit'])
+                item['total_tips'] = float(item['total_tips'])
+                item['game_count'] = int(item['game_count'])
+                if item.get('credit_limit') is not None:
+                    item['credit_limit'] = float(item['credit_limit'])
+                if item.get('deal_percent') is not None:
+                    item['deal_percent'] = float(item['deal_percent'])
+            
+            # Get agent report (aggregated) - only for games since last Thursday
+            # Join games with players and agents (using lazy frames)
+            games_with_players = (
+                games_since_thursday_df
+                .join(
+                    players_df.select([
+                        pl.col('player_id').cast(pl.Utf8).alias('player_id'),
+                        pl.col('agent_id')
+                    ]),
+                    on='player_id',
+                    how='inner'
+                )
+            )
+            
+            games_with_agents = (
+                games_with_players
+                .join(
+                    agents_df.select(['agent_id', 'deal_percent']),
+                    on='agent_id',
+                    how='inner'
+                )
+            )
+            
+            # Aggregate by agent (using lazy frame)
+            agent_agg_df = (
+                games_with_agents
+                .group_by('agent_id')
+                .agg([
+                    pl.sum('tips').alias('total_tips'),
+                    pl.sum('profit').alias('total_profit'),
+                    pl.first('deal_percent').alias('deal_percent')
+                ])
+            )
+            
+            # Join with agent names (using lazy frame)
+            agent_report_df = (
+                agent_agg_df
+                .join(
+                    agents_df.select(['agent_id', 'agent_name']),
+                    on='agent_id',
+                    how='left'
+                )
+                .with_columns([
+                    (pl.col('total_tips') * pl.col('deal_percent')).alias('agent_tips')
+                ])
+                .select([
+                    pl.col('agent_id'),
+                    pl.col('agent_name'),
+                    pl.col('total_tips'),
+                    pl.col('total_profit'),
+                    pl.col('agent_tips')
+                ])
+                .filter(pl.col('agent_id').is_not_null())
+                .collect()
+            )
+            
+            # Convert to list of dictionaries
+            agent_report = agent_report_df.to_dicts()
+            # Convert numeric values to proper types
+            for item in agent_report:
+                item['agent_id'] = int(item['agent_id'])
+                item['total_tips'] = float(item['total_tips'])
+                item['total_profit'] = float(item['total_profit'])
+                item['agent_tips'] = float(item['agent_tips'])
+        
+        return {
+            'tips_stats': {
+                'total_all_time': round(total_tips_all_time, 2),
+                'previous_period': round(previous_period_tips, 2),
+                'since_last_thursday': round(since_last_thursday_tips, 2)
+            },
+            'blocked_players': blocked_players,
+            'over_credit_limit_players': over_credit_limit_players,
+            'player_aggregates': player_aggregates,
+            'agent_report': agent_report
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to fetch dashboard data: {str(e)}')
 
 
 @app.post('/upload_csv')

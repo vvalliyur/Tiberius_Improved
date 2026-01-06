@@ -1,19 +1,55 @@
-import { useState } from 'react';
+import { useState, useLayoutEffect, useRef, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
-import Agents from './pages/Agents';
-import Players from './pages/Players';
-import AgentReport from './pages/AgentReport';
-import DetailedAgentReport from './pages/DetailedAgentReport';
-import CreateUpdateHistory from './pages/CreateUpdateHistory';
+import RawData from './pages/RawData';
+import Management from './pages/Management';
+import AgentReports from './pages/AgentReports';
 import History from './pages/History';
 
 function App() {
   const { user, token, loading: authLoading } = useAuth();
   const [activePage, setActivePage] = useState('dashboard');
+  const prevPageRef = useRef(activePage);
+
+  // Lock scroll position during page transitions
+  useLayoutEffect(() => {
+    if (prevPageRef.current !== activePage) {
+      // Lock body scroll
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      // Reset scroll position
+      window.scrollTo(0, 0);
+      
+      // Unlock after a frame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          document.body.style.overflow = '';
+          window.scrollTo(0, 0);
+        });
+      });
+      
+      prevPageRef.current = activePage;
+    }
+  }, [activePage]);
+
+  // Ensure scroll is at top on mount and page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activePage]);
+
+  const handlePageChange = (page) => {
+    setActivePage(page);
+  };
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -55,23 +91,14 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key`}
     switch (activePage) {
       case 'dashboard':
         return <Dashboard />;
+      case 'raw-data':
+        return <RawData />;
       case 'reporting':
-        return (
-          <>
-            <AgentReport />
-            <div className="mt-8">
-              <DetailedAgentReport />
-            </div>
-          </>
-        );
-      case 'agents':
-        return <Agents />;
-      case 'players':
-        return <Players />;
+        return <AgentReports />;
+      case 'management':
+        return <Management />;
       case 'history':
         return <History />;
-      case 'audit':
-        return <CreateUpdateHistory />;
       default:
         return <Dashboard />;
     }
@@ -79,7 +106,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key`}
 
   return (
     <ThemeProvider>
-      <Layout activePage={activePage} onPageChange={setActivePage}>
+      <Layout activePage={activePage} onPageChange={handlePageChange}>
         {renderPage()}
       </Layout>
     </ThemeProvider>

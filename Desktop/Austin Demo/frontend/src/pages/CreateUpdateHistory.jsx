@@ -152,13 +152,13 @@ function CreateUpdateHistory() {
 
       <div className="data-section">
         <p className="data-count">
-          Showing {historyData.length} {historyData.length === 1 ? 'record' : 'records'}
+          {historyData.length} {historyData.length === 1 ? 'record' : 'records'}
         </p>
         <DataTable
           data={historyData}
           columns={historyColumns}
           isLoading={isLoading}
-          emptyMessage="No history data available. Adjust filters or perform some operations."
+          emptyMessage="No history data available. Adjust filters or perform some operations"
         />
       </div>
     </div>

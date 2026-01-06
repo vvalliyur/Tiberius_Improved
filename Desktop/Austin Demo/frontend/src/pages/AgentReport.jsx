@@ -102,7 +102,7 @@ function AgentReport() {
         data={reportData}
         columns={columns}
         isLoading={isLoading}
-        emptyMessage="No agent report data available. Adjust filters or upload game data."
+        emptyMessage="No agent report data available. Adjust filters or upload game data"
       />
     </div>
   );

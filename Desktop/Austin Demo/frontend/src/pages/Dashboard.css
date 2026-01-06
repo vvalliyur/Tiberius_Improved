@@ -1,0 +1,15 @@
+.below-credit-row {
+  background-color: hsl(var(--destructive) / 0.1) !important;
+}
+
+.below-credit-row:hover {
+  background-color: hsl(var(--destructive) / 0.15) !important;
+}
+
+/* Prevent layout shifts */
+[data-page-container] {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

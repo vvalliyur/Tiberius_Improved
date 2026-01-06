@@ -128,7 +128,6 @@ function History() {
 
   const individualColumns = useMemo(() => [
     { accessorKey: 'game_code', header: 'Game Code' },
-    { accessorKey: 'club_code', header: 'Club Code' },
     { accessorKey: 'player_id', header: 'Player ID' },
     { accessorKey: 'player_name', header: 'Player Name' },
     { accessorKey: 'date_started', header: 'Date Started', cell: info => new Date(info.getValue()).toLocaleString() },
@@ -140,21 +139,20 @@ function History() {
       return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
     }},
     { accessorKey: 'tips', header: 'Tips', cell: info => `${Number(info.getValue()).toFixed(2)}` },
-    { accessorKey: 'buy_in', header: 'Buy In', cell: info => `${Number(info.getValue()).toFixed(2)}` },
   ], []);
 
   const selectedCount = selectedPlayerIds.length;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
+    <div className="space-y-8 w-full" data-page-container>
+      <div className="space-y-2 h-[88px] flex flex-col justify-center">
         <h1 className="text-4xl font-bold tracking-tight">Player History</h1>
         <p className="text-lg text-muted-foreground">View historical data for selected players</p>
       </div>
 
-      <div className="flex gap-6 h-[calc(100vh-12rem)]">
-        <div className="w-80 flex-shrink-0">
-          <Card className="h-full flex flex-col shadow-elevated">
+      <div className="flex gap-6" style={{ minHeight: '600px', height: 'calc(100vh - 280px)' }}>
+        <div className="w-80 flex-shrink-0" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
+          <Card className="h-full flex flex-col shadow-elevated" style={{ height: '100%' }}>
             <CardHeader className="bg-muted/30 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl">Players</CardTitle>
@@ -209,23 +207,33 @@ function History() {
                   </div>
                 ) : filteredPlayers.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8 text-sm">
-                    No players found matching your criteria.
+                    No players found matching your criteria
                   </div>
                 ) : (
                   <div className="space-y-1">
                     {filteredPlayers.map((player) => (
                       <div
                         key={player.player_id}
-                        className={`flex flex-col p-2 rounded-md cursor-pointer transition-colors ${
+                        className={`flex flex-col p-3 rounded-md cursor-pointer transition-colors ${
                           selectedPlayerIds.includes(player.player_id)
                             ? 'bg-primary text-primary-foreground'
                             : 'hover:bg-muted'
                         }`}
                         onClick={() => handlePlayerToggle(player.player_id)}
                       >
-                        <div className="font-medium text-sm">{player.player_name}</div>
-                        <div className="text-xs opacity-80">
-                          ID: {player.player_id} {player.agent_name && `• ${player.agent_name}`}
+                        <div className="font-semibold text-base mb-1.5">{player.player_name}</div>
+                        <div className={`flex items-center gap-2 flex-wrap ${
+                          selectedPlayerIds.includes(player.player_id)
+                            ? 'text-primary-foreground/90'
+                            : 'text-muted-foreground'
+                        }`}>
+                          <span className="font-bold text-sm">{player.player_id}</span>
+                          {player.agent_name && (
+                            <>
+                              <span className="text-xs">•</span>
+                              <span className="font-semibold text-sm">{player.agent_name}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -236,7 +244,7 @@ function History() {
           </Card>
         </div>
 
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+        <div ref={mainContentRef} className="flex-1 overflow-y-auto space-y-6 custom-scrollbar min-h-0" style={{ minHeight: '600px' }}>
           <DateRangeFilter
             startDate={startDate}
             endDate={endDate}
@@ -260,7 +268,7 @@ function History() {
               <CardHeader className="bg-muted/30 border-b">
                 <CardTitle className="text-2xl">Aggregated Statistics</CardTitle>
                 <CardDescription className="text-base">
-                  Showing {aggregatedData.length} {aggregatedData.length === 1 ? 'player' : 'players'}
+                  {aggregatedData.length} {aggregatedData.length === 1 ? 'player' : 'players'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
@@ -268,7 +276,7 @@ function History() {
                   data={aggregatedData}
                   columns={aggregatedColumns}
                   isLoading={isLoading}
-                  emptyMessage="No aggregated data available."
+                  emptyMessage="No aggregated data available"
                 />
               </CardContent>
             </Card>
@@ -279,7 +287,7 @@ function History() {
               <CardHeader className="bg-muted/30 border-b">
                 <CardTitle className="text-2xl">Individual Records</CardTitle>
                 <CardDescription className="text-base">
-                  Showing {individualRecords.length} {individualRecords.length === 1 ? 'record' : 'records'}
+                  {individualRecords.length} {individualRecords.length === 1 ? 'record' : 'records'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
@@ -287,7 +295,7 @@ function History() {
                   data={individualRecords}
                   columns={individualColumns}
                   isLoading={isLoading}
-                  emptyMessage="No individual records available."
+                  emptyMessage="No individual records available"
                 />
               </CardContent>
             </Card>
@@ -297,7 +305,7 @@ function History() {
             <Card>
               <CardContent className="py-12">
                 <div className="text-center text-muted-foreground">
-                  No data available for selected players. Click "Fetch Data" to load history.
+                  No data available for selected players. Click "Fetch Data" to load history
                 </div>
               </CardContent>
             </Card>

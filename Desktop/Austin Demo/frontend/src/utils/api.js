@@ -96,6 +96,15 @@ export const getDetailedAgentReport = async (startDate, endDate, lookbackDays = 
   return response.data;
 };
 
+export const getAgentReports = async (startDate, endDate, lookbackDays = null) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  const response = await api.get('/get_agent_reports', { params });
+  return response.data;
+};
+
 export const getCreateUpdateHistory = async (startDate, endDate, lookbackDays = null, tableName = null, operationType = null) => {
   const params = {};
   if (startDate) params.start_date = startDate;
@@ -125,6 +134,11 @@ export const upsertAgent = async (agentData) => {
 
 export const upsertPlayer = async (playerData) => {
   const response = await api.post('/players/upsert', playerData);
+  return response.data;
+};
+
+export const getDashboardData = async () => {
+  const response = await api.get('/get_dashboard_data');
   return response.data;
 };
 

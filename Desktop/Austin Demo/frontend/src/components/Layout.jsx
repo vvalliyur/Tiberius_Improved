@@ -7,16 +7,11 @@ import { Button } from './ui/button';
 export default function Layout({ children, activePage, onPageChange }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const managementRef = useRef(null);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (managementRef.current && !managementRef.current.contains(event.target)) {
-        setIsManagementOpen(false);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
@@ -28,11 +23,16 @@ export default function Layout({ children, activePage, onPageChange }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between">
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', width: '100%', position: 'fixed', top: 0, left: 0, right: 0 }}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
+          <div className="flex items-center justify-between" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
             <div className="flex-shrink-0">
-              <h1 className="text-3xl font-bold tracking-tight gradient-text">Tiberius</h1>
+              <h1 
+                className="text-3xl font-bold tracking-tight gradient-text cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => onPageChange('dashboard')}
+              >
+                Tiberius
+              </h1>
             </div>
             
             <div className="hidden md:flex flex-1 items-center justify-center gap-2">
@@ -40,7 +40,8 @@ export default function Layout({ children, activePage, onPageChange }) {
                 variant={activePage === 'dashboard' ? 'default' : 'ghost'}
                 size="lg"
                 onClick={() => onPageChange('dashboard')}
-                className="text-base px-6 py-3 rounded-full transition-all duration-200"
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Dashboard
               </Button>
@@ -49,60 +50,40 @@ export default function Layout({ children, activePage, onPageChange }) {
                 variant={activePage === 'reporting' ? 'default' : 'ghost'}
                 size="lg"
                 onClick={() => onPageChange('reporting')}
-                className="text-base px-6 py-3 rounded-full transition-all duration-200"
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Reporting
               </Button>
-              
-              <div className="relative" ref={managementRef}>
-                <Button
-                  variant={activePage === 'agents' || activePage === 'players' ? 'default' : 'ghost'}
-                  size="lg"
-                  onClick={() => setIsManagementOpen(!isManagementOpen)}
-                  className="text-base px-6 py-3 rounded-full transition-all duration-200"
-                >
-                  Management
-                </Button>
-                {isManagementOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-popover border rounded-xl shadow-elevated-lg z-50 min-w-[180px] overflow-hidden animate-in fade-in-0 zoom-in-95">
-                    <button
-                      className="w-full text-left px-6 py-3 text-base hover:bg-accent hover:text-accent-foreground transition-colors"
-                      onClick={() => {
-                        onPageChange('agents');
-                        setIsManagementOpen(false);
-                      }}
-                    >
-                      Agents
-                    </button>
-                    <button
-                      className="w-full text-left px-6 py-3 text-base hover:bg-accent hover:text-accent-foreground transition-colors border-t"
-                      onClick={() => {
-                        onPageChange('players');
-                        setIsManagementOpen(false);
-                      }}
-                    >
-                      Players
-                    </button>
-                  </div>
-                )}
-              </div>
               
               <Button
                 variant={activePage === 'history' ? 'default' : 'ghost'}
                 size="lg"
                 onClick={() => onPageChange('history')}
-                className="text-base px-6 py-3 rounded-full transition-all duration-200"
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 History
               </Button>
               
               <Button
-                variant={activePage === 'audit' ? 'default' : 'ghost'}
+                variant={activePage === 'management' ? 'default' : 'ghost'}
                 size="lg"
-                onClick={() => onPageChange('audit')}
-                className="text-base px-6 py-3 rounded-full transition-all duration-200"
+                onClick={() => onPageChange('management')}
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
-                Audit
+                Management
+              </Button>
+              
+              <Button
+                variant={activePage === 'raw-data' ? 'default' : 'ghost'}
+                size="lg"
+                onClick={() => onPageChange('raw-data')}
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
+              >
+                Raw Data
               </Button>
             </div>
 
@@ -148,8 +129,10 @@ export default function Layout({ children, activePage, onPageChange }) {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        {children}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10" style={{ paddingTop: '100px', minHeight: 'calc(100vh - 80px)', marginTop: 0 }}>
+        <div className="w-full" style={{ minHeight: 'calc(100vh - 200px)' }}>
+          {children}
+        </div>
       </main>
     </div>
   );
