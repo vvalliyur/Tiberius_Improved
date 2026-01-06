@@ -22,7 +22,7 @@ function AgentReport() {
         const value = Number(info.getValue());
         return (
           <span className={value >= 0 ? 'profit-positive' : 'profit-negative'}>
-            ${value.toFixed(2)}
+            {value.toFixed(2)}
           </span>
         );
       },
@@ -30,12 +30,12 @@ function AgentReport() {
     {
       accessorKey: 'total_tips',
       header: 'Total Tips',
-      cell: info => `$${Number(info.getValue()).toFixed(2)}`,
+      cell: info => Number(info.getValue()).toFixed(2),
     },
     {
       accessorKey: 'agent_tips',
       header: 'Agent Tips',
-      cell: info => `$${Number(info.getValue()).toFixed(2)}`,
+      cell: info => Number(info.getValue()).toFixed(2),
     },
     { accessorKey: 'game_count', header: 'Game Count' },
   ];
@@ -93,7 +93,7 @@ function AgentReport() {
         <div className="summary-card">
           <div className="summary-label">Total Agent Tips</div>
           <div className="summary-value">
-            ${reportData.reduce((sum, row) => sum + Number(row.agent_tips || 0), 0).toFixed(2)}
+            {reportData.reduce((sum, row) => sum + Number(row.agent_tips || 0), 0).toFixed(2)}
           </div>
         </div>
       </div>

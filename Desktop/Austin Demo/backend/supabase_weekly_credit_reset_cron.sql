@@ -1,6 +1,12 @@
 -- Cron job to reset weekly_credit_adjustment to 0 every Thursday at 12:00 AM Texas time (Central Time)
 -- This function resets all players' weekly_credit_adjustment to 0
 
+-- STEP 1: Enable the pg_cron extension (run this first if you get a "schema cron does not exist" error)
+-- Note: In Supabase, you may need to enable this extension in the dashboard under Database > Extensions
+-- Or run this SQL command:
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- STEP 2: Create the function that resets weekly credit adjustments
 CREATE OR REPLACE FUNCTION reset_weekly_credit_adjustments()
 RETURNS void
 LANGUAGE plpgsql
@@ -14,24 +20,26 @@ BEGIN
 END;
 $$;
 
--- Create a cron job that runs every Thursday at 12:00 AM Central Time (1:00 AM EST / 6:00 AM UTC during standard time, 5:00 AM UTC during daylight time)
+-- STEP 3: Schedule the cron job
+-- Create a cron job that runs every Thursday at 12:00 AM Central Time
 -- Note: Supabase uses pg_cron extension. The schedule is in cron format: minute hour day-of-month month day-of-week
--- This runs at 6:00 AM UTC (which is 12:00 AM Central Standard Time)
--- During daylight saving time, Central Time is UTC-5, so we'd need 5:00 AM UTC
--- We'll use 6:00 AM UTC as the base (CST), and adjust if needed for DST
+-- Central Time is UTC-6 (CST) or UTC-5 (CDT during daylight saving time)
+-- We'll use 6:00 AM UTC as the base (12:00 AM CST), which works for most of the year
 -- Cron format: minute hour * * day-of-week (0=Sunday, 4=Thursday)
 
--- To schedule this job, run in Supabase SQL editor:
--- SELECT cron.schedule(
---     'reset-weekly-credit-adjustments',
---     '0 6 * * 4',  -- Every Thursday at 6:00 AM UTC (12:00 AM CST)
---     $$SELECT reset_weekly_credit_adjustments();$$
--- );
+-- Schedule the job (run this after enabling pg_cron):
+SELECT cron.schedule(
+    'reset-weekly-credit-adjustments',
+    '0 6 * * 4',  -- Every Thursday at 6:00 AM UTC (12:00 AM Central Standard Time)
+    $$SELECT reset_weekly_credit_adjustments();$$
+);
 
--- Alternative: Use 5:00 AM UTC to account for daylight saving time (12:00 AM CDT)
+-- Alternative: If you need to account for daylight saving time, you can schedule two jobs:
+-- One for CST (6:00 AM UTC) and one for CDT (5:00 AM UTC), but this requires manual management
+-- Or use 5:00 AM UTC to cover CDT, but this will run at 11:00 PM Wednesday during CST:
 -- SELECT cron.schedule(
 --     'reset-weekly-credit-adjustments',
---     '0 5 * * 4',  -- Every Thursday at 5:00 AM UTC (12:00 AM CDT during DST)
+--     '0 5 * * 4',  -- Every Thursday at 5:00 AM UTC (12:00 AM CDT during DST, 11:00 PM Wednesday during CST)
 --     $$SELECT reset_weekly_credit_adjustments();$$
 -- );
 

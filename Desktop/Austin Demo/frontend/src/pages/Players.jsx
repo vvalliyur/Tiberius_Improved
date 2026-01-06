@@ -11,7 +11,7 @@ function Players() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [formData, setFormData] = useState({
-    player_id: null,
+    player_id: '',
     player_name: '',
     agent_id: '',
     credit_limit: '',
@@ -78,7 +78,7 @@ function Players() {
 
   const handleEdit = (player) => {
     setFormData({
-      player_id: player.player_id,
+      player_id: player.player_id || '',
       player_name: player.player_name || '',
       agent_id: player.agent_id || '',
       credit_limit: player.credit_limit || '',
@@ -99,7 +99,7 @@ function Players() {
 
     try {
       const submitData = {
-        player_id: isUpdateMode ? formData.player_id : null,
+        player_id: formData.player_id || null,
         player_name: formData.player_name,
         agent_id: formData.agent_id ? parseInt(formData.agent_id) : null,
         credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : null,
@@ -124,7 +124,7 @@ function Players() {
     setIsFormOpen(false);
     setIsUpdateMode(false);
     setFormData({
-      player_id: null,
+      player_id: '',
       player_name: '',
       agent_id: '',
       credit_limit: '',
@@ -159,17 +159,18 @@ function Players() {
           <div className="form-container">
             <h2>{isUpdateMode ? 'Update Player' : 'Create Player'}</h2>
             <form onSubmit={handleSubmit}>
-              {isUpdateMode && (
-                <div className="form-group">
-                  <label>Player ID</label>
-                  <input
-                    type="text"
-                    value={formData.player_id || ''}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-              )}
+              <div className="form-group">
+                <label>Player ID *</label>
+                <input
+                  type="text"
+                  name="player_id"
+                  value={formData.player_id}
+                  onChange={handleChange}
+                  required
+                  disabled={isUpdateMode}
+                  className={isUpdateMode ? "disabled-input" : ""}
+                />
+              </div>
               <div className="form-group">
                 <label>Player Name *</label>
                 <input
@@ -243,14 +244,18 @@ function Players() {
                 />
               </div>
               <div className="form-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    name="do_not_allow"
-                    checked={formData.do_not_allow}
-                    onChange={handleChange}
-                  />
-                  {' '}Do Not Allow
+                <label className="toggle-label">
+                  <span className="toggle-label-text">Block</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      name="do_not_allow"
+                      checked={formData.do_not_allow}
+                      onChange={handleChange}
+                      className="toggle-input"
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
                 </label>
               </div>
               <div className="form-actions">

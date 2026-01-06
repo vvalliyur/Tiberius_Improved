@@ -48,14 +48,53 @@
 }
 
 .agent-header {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
-  color: hsl(var(--primary-foreground));
+  background: hsl(var(--muted) / 0.6);
+  color: hsl(var(--foreground));
   padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 1.5rem;
+  position: relative;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.agent-actions-container {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: hsl(var(--muted) / 0.3);
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  min-height: 60px;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  min-width: 140px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.action-button:active {
+  transform: scale(0.98);
 }
 
 .agent-info h2 {
@@ -63,15 +102,57 @@
   font-size: 1.5rem;
 }
 
+.agent-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 .agent-id,
 .deal-percent {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
+  background: hsl(var(--muted));
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
-  margin-right: 0.5rem;
-  margin-top: 0.5rem;
+  color: hsl(var(--foreground));
+}
+
+.agent-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.header-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  border: 1.5px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.header-action-button:hover {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-action-button:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .agent-summary {
@@ -97,14 +178,24 @@
   font-weight: 600;
 }
 
-.summary-value.highlight {
-  font-size: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+.tips-summary .summary-value.tips-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
 }
 
-.players-table-container {
+.summary-value.highlight.agent-tips-value {
+  font-size: 2rem;
+  font-weight: 700;
+  background: hsl(var(--muted));
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  color: hsl(var(--foreground));
+  border: 2px solid hsl(var(--border));
+}
+
+.table-section {
+  width: 100%;
   overflow-x: auto;
 }
 
@@ -128,12 +219,52 @@
 }
 
 .players-table th.tips-header {
-  font-size: 1.375rem;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
   color: hsl(var(--foreground));
   background: hsl(var(--muted));
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.025em;
+  padding: 1.25rem 1rem;
+}
+
+.players-table th.collapse-header-cell {
+  width: 80px;
+  padding: 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table-header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  border: 2px solid hsl(var(--primary));
+  border-radius: 0.5rem;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-header-button:hover {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.table-header-button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.table-header-button .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
 }
 
 .players-table td {
@@ -152,10 +283,40 @@
   border-bottom: none;
 }
 
-.agent-tips-cell {
+.collapsed-message-row {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.collapsed-message {
+  padding: 1.5rem;
+  text-align: center;
+  font-style: italic;
+  color: hsl(var(--foreground) / 0.7);
+  font-size: 0.95rem;
+}
+
+.tips-cell {
+  font-size: 1.125rem;
   font-weight: 600;
-  color: hsl(var(--primary));
+  color: hsl(var(--foreground));
+  text-align: center;
+}
+
+.totals-row {
+  background: hsl(var(--muted) / 0.5);
+  font-weight: 700;
+}
+
+.totals-label {
+  text-align: right;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.totals-value {
+  font-weight: 700;
   font-size: 1.25rem;
+  color: hsl(var(--primary));
 }
 
 @media (max-width: 768px) {
@@ -168,7 +329,7 @@
     justify-content: space-between;
   }
 
-  .players-table-container {
+  .table-section {
     font-size: 0.875rem;
   }
 
@@ -176,5 +337,14 @@
   .players-table td {
     padding: 0.75rem 0.5rem;
   }
-}
 
+  .table-header-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .table-header-button .icon {
+    width: 18px;
+    height: 18px;
+  }
+}
