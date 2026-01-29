@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,41 +20,31 @@ export default function DateRangeFilter({
   isLoading,
   showClubCode = false
 }) {
-  const [showStartCalendar, setShowStartCalendar] = useState(false);
-  const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [openCalendar, setOpenCalendar] = useState(null); // 'start' | 'end' | null
   const startDateInputRef = useRef(null);
   const endDateInputRef = useRef(null);
-  const startCalendarRef = useRef(null);
-  const endCalendarRef = useRef(null);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    // Return in YYYY-MM-DD format for input type="date"
-    return dateString;
-  };
+  const startDateContainerRef = useRef(null);
+  const endDateContainerRef = useRef(null);
+  const calendarRef = useRef(null);
 
   const formatDisplayDate = (dateString) => {
-    if (!dateString) return 'Select date';
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const handleDateClick = (date, type) => {
+  const handleDateSelect = (date) => {
     const dateStr = date.toISOString().split('T')[0];
-    if (type === 'start') {
+    if (openCalendar === 'start') {
       onStartDateChange(dateStr);
-      setShowStartCalendar(false);
-    } else {
+    } else if (openCalendar === 'end') {
       onEndDateChange(dateStr);
-      setShowEndCalendar(false);
     }
+    setOpenCalendar(null);
   };
 
   const getLastThursday12amTexas = () => {
-    // Get current time in Texas time (America/Chicago - Central Time)
     const now = new Date();
-    
-    // Create a formatter for Texas timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Chicago',
       year: 'numeric',
@@ -65,29 +56,22 @@ export default function DateRangeFilter({
       hour12: false
     });
     
-    // Get Texas time components
     const parts = formatter.formatToParts(now);
     const texasYear = parseInt(parts.find(p => p.type === 'year').value);
-    const texasMonth = parseInt(parts.find(p => p.type === 'month').value) - 1; // Month is 0-indexed
+    const texasMonth = parseInt(parts.find(p => p.type === 'month').value) - 1;
     const texasDay = parseInt(parts.find(p => p.type === 'day').value);
     const texasHour = parseInt(parts.find(p => p.type === 'hour').value);
     
-    // Create a date object representing the Texas time
-    // We'll work with UTC and adjust, but it's easier to work with local representation
     const texasDate = new Date(texasYear, texasMonth, texasDay, texasHour);
     
-    // Calculate days since Thursday (Thursday = 4 in getDay())
     let daysSinceThursday = (texasDate.getDay() - 4) % 7;
     if (daysSinceThursday < 0) daysSinceThursday += 7;
     
-    // If it's Thursday but before 12am, go to previous Thursday
     if (daysSinceThursday === 0 && texasHour < 12) {
       daysSinceThursday = 7;
     }
     
-    // Calculate last Thursday in Texas time
     const lastThursday = new Date(texasYear, texasMonth, texasDay - daysSinceThursday, 0, 0, 0);
-    
     return lastThursday;
   };
 
@@ -95,7 +79,6 @@ export default function DateRangeFilter({
     const lastThursday = getLastThursday12amTexas();
     const today = new Date();
     
-    // Get today's date in Texas timezone for end date
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Chicago',
       year: 'numeric',
@@ -109,7 +92,6 @@ export default function DateRangeFilter({
     const todayDay = parseInt(todayParts.find(p => p.type === 'day').value);
     const todayTexas = new Date(todayYear, todayMonth, todayDay);
     
-    // Format dates as YYYY-MM-DD
     const formatDateString = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -117,12 +99,9 @@ export default function DateRangeFilter({
       return `${year}-${month}-${day}`;
     };
     
-    const startDateStr = formatDateString(lastThursday);
-    const endDateStr = formatDateString(todayTexas);
-    
-    onStartDateChange(startDateStr);
-    onEndDateChange(endDateStr);
-    onLookbackDaysChange(null); // Clear lookback days when using current week
+    onStartDateChange(formatDateString(lastThursday));
+    onEndDateChange(formatDateString(todayTexas));
+    onLookbackDaysChange(null);
   };
 
   const getQuickDateOptions = () => {
@@ -142,43 +121,58 @@ export default function DateRangeFilter({
     return options;
   };
 
-  const CalendarPopup = ({ show, onClose, selectedDate, onSelect, type, inputRef, calendarRef }) => {
+  // Close calendar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target) &&
+        startDateInputRef.current &&
+        !startDateInputRef.current.contains(event.target) &&
+        endDateInputRef.current &&
+        !endDateInputRef.current.contains(event.target) &&
+        startDateContainerRef.current &&
+        !startDateContainerRef.current.contains(event.target) &&
+        endDateContainerRef.current &&
+        !endDateContainerRef.current.contains(event.target)
+      ) {
+        setOpenCalendar(null);
+      }
+    };
+
+    if (openCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openCalendar]);
+
+  const DatePicker = () => {
+    if (!openCalendar) return null;
+
+    const selectedDate = openCalendar === 'start' ? startDate : endDate;
+    const containerRef = openCalendar === 'start' ? startDateContainerRef : endDateContainerRef;
     const [position, setPosition] = useState({ top: 0, left: 0 });
 
     useEffect(() => {
-      if (show && inputRef?.current) {
-        const inputRect = inputRef.current.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
-        
-        setPosition({
-          top: inputRect.bottom + scrollY + 4,
-          left: inputRect.left + scrollX,
-        });
-      }
-    }, [show, inputRef]);
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (
-          calendarRef?.current &&
-          !calendarRef.current.contains(event.target) &&
-          inputRef?.current &&
-          !inputRef.current.contains(event.target)
-        ) {
-          onClose();
+      const updatePosition = () => {
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          setPosition({
+            top: rect.bottom + 8, // 8px gap below input
+            left: rect.left,
+          });
         }
       };
 
-      if (show) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-        };
-      }
-    }, [show, onClose, calendarRef, inputRef]);
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
 
-    if (!show) return null;
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }, [containerRef, openCalendar]);
 
     const today = new Date();
     const currentMonth = selectedDate ? new Date(selectedDate + 'T00:00:00') : today;
@@ -209,93 +203,94 @@ export default function DateRangeFilter({
 
     const quickOptions = getQuickDateOptions();
 
-    return (
+    return createPortal(
       <Card
         ref={calendarRef}
-        className="fixed z-50 w-[320px] p-4 shadow-elevated-lg"
+        className="fixed z-[100] w-[320px] p-4 shadow-elevated-lg"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg">Select {openCalendar === 'start' ? 'Start' : 'End'} Date</h3>
+            <Button variant="ghost" size="icon" onClick={() => setOpenCalendar(null)} className="h-6 w-6">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Quick Select</p>
+            <div className="grid grid-cols-2 gap-2">
+              {quickOptions.slice(0, 6).map((option) => (
+                <Button
+                  key={option.days}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => handleDateSelect(new Date(option.date))}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">Select {type === 'start' ? 'Start' : 'End'} Date</h3>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={() => navigateMonth('prev')} className="h-8 w-8">
+                <span>‹</span>
+              </Button>
+              <span className="font-semibold">{monthNames[viewMonth]} {viewYear}</span>
+              <Button variant="ghost" size="icon" onClick={() => navigateMonth('next')} className="h-8 w-8">
+                <span>›</span>
               </Button>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Quick Select</p>
-              <div className="grid grid-cols-2 gap-2">
-                {quickOptions.slice(0, 6).map((option) => (
-                  <Button
-                    key={option.days}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-8"
-                    onClick={() => handleDateClick(new Date(option.date), type)}
+            <div className="grid grid-cols-7 gap-1">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1">
+                  {day}
+                </div>
+              ))}
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <div key={`empty-${i}`} className="p-1" />
+              ))}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const date = new Date(viewYear, viewMonth, day);
+                date.setHours(0, 0, 0, 0);
+                const todayStart = new Date(today);
+                todayStart.setHours(0, 0, 0, 0);
+                const dateStr = date.toISOString().split('T')[0];
+                const isToday = dateStr === todayStart.toISOString().split('T')[0];
+                const isSelected = selectedDate === dateStr;
+                const isPast = date < todayStart && !isToday;
+
+                return (
+                  <button
+                    key={day}
+                    onClick={() => handleDateSelect(date)}
+                    disabled={isPast}
+                    className={cn(
+                      "p-1 text-sm rounded-md transition-colors",
+                      isSelected && "bg-primary text-primary-foreground font-semibold",
+                      !isSelected && !isPast && "hover:bg-muted",
+                      isPast && "opacity-30 cursor-not-allowed",
+                      isToday && !isSelected && "bg-muted font-medium"
+                    )}
                   >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="icon" onClick={() => navigateMonth('prev')} className="h-8 w-8">
-                  <span>‹</span>
-                </Button>
-                <span className="font-semibold">{monthNames[viewMonth]} {viewYear}</span>
-                <Button variant="ghost" size="icon" onClick={() => navigateMonth('next')} className="h-8 w-8">
-                  <span>›</span>
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1">
                     {day}
-                  </div>
-                ))}
-                {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                  <div key={`empty-${i}`} className="p-1" />
-                ))}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1;
-                  const date = new Date(viewYear, viewMonth, day);
-                  date.setHours(0, 0, 0, 0);
-                  const todayStart = new Date(today);
-                  todayStart.setHours(0, 0, 0, 0);
-                  const dateStr = date.toISOString().split('T')[0];
-                  const isToday = dateStr === todayStart.toISOString().split('T')[0];
-                  const isSelected = selectedDate === dateStr;
-                  const isPast = date < todayStart && !isToday;
-
-                  return (
-                    <button
-                      key={day}
-                      onClick={() => handleDateClick(date, type)}
-                      disabled={isPast}
-                      className={cn(
-                        "p-1 text-sm rounded-md transition-colors",
-                        isSelected && "bg-primary text-primary-foreground font-semibold",
-                        !isSelected && !isPast && "hover:bg-muted",
-                        isPast && "opacity-30 cursor-not-allowed",
-                        isToday && !isSelected && "bg-muted font-medium"
-                      )}
-                    >
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </Card>
+        </div>
+      </Card>,
+      document.body
     );
   };
 
@@ -304,36 +299,30 @@ export default function DateRangeFilter({
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[200px]">
           <Label htmlFor="start-date" className="text-sm mb-1.5 block">Start Date</Label>
-          <div className="relative">
-            <div className="relative">
-              <Input
-                id="start-date"
-                ref={startDateInputRef}
-                type="date"
-                className="w-full pr-10"
-                value={formatDate(startDate)}
-                onChange={(e) => {
-                  onStartDateChange(e.target.value);
-                }}
-                onFocus={() => {
-                  setShowStartCalendar(true);
-                  setShowEndCalendar(false);
-                }}
-                placeholder="Select start date"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowStartCalendar(!showStartCalendar);
-                  setShowEndCalendar(false);
-                }}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="relative" ref={startDateContainerRef}>
+            <Input
+              id="start-date"
+              ref={startDateInputRef}
+              type="text"
+              readOnly
+              className="w-full pr-10 cursor-pointer"
+              value={startDate ? formatDisplayDate(startDate) : ''}
+              onClick={() => {
+                setOpenCalendar(openCalendar === 'start' ? null : 'start');
+              }}
+              placeholder="Select start date"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenCalendar(openCalendar === 'start' ? null : 'start');
+              }}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
             {startDate && (
               <Button
                 variant="ghost"
@@ -348,49 +337,34 @@ export default function DateRangeFilter({
               </Button>
             )}
           </div>
-          <CalendarPopup
-            show={showStartCalendar}
-            onClose={() => setShowStartCalendar(false)}
-            selectedDate={startDate}
-            onSelect={(date) => handleDateClick(date, 'start')}
-            type="start"
-            inputRef={startDateInputRef}
-            calendarRef={startCalendarRef}
-          />
         </div>
 
         <div className="flex-1 min-w-[200px]">
           <Label htmlFor="end-date" className="text-sm mb-1.5 block">End Date</Label>
-          <div className="relative">
-            <div className="relative">
-              <Input
-                id="end-date"
-                ref={endDateInputRef}
-                type="date"
-                className="w-full pr-10"
-                value={formatDate(endDate)}
-                onChange={(e) => {
-                  onEndDateChange(e.target.value);
-                }}
-                onFocus={() => {
-                  setShowEndCalendar(true);
-                  setShowStartCalendar(false);
-                }}
-                placeholder="Select end date"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEndCalendar(!showEndCalendar);
-                  setShowStartCalendar(false);
-                }}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="relative" ref={endDateContainerRef}>
+            <Input
+              id="end-date"
+              ref={endDateInputRef}
+              type="text"
+              readOnly
+              className="w-full pr-10 cursor-pointer"
+              value={endDate ? formatDisplayDate(endDate) : ''}
+              onClick={() => {
+                setOpenCalendar(openCalendar === 'end' ? null : 'end');
+              }}
+              placeholder="Select end date"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenCalendar(openCalendar === 'end' ? null : 'end');
+              }}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
             {endDate && (
               <Button
                 variant="ghost"
@@ -405,15 +379,6 @@ export default function DateRangeFilter({
               </Button>
             )}
           </div>
-          <CalendarPopup
-            show={showEndCalendar}
-            onClose={() => setShowEndCalendar(false)}
-            selectedDate={endDate}
-            onSelect={(date) => handleDateClick(date, 'end')}
-            type="end"
-            inputRef={endDateInputRef}
-            calendarRef={endCalendarRef}
-          />
         </div>
 
         <div className="flex-1 min-w-[150px]">
@@ -484,6 +449,8 @@ export default function DateRangeFilter({
           </p>
         </div>
       )}
+
+      <DatePicker />
     </Card>
   );
 }
