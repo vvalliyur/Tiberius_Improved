@@ -15,18 +15,19 @@ function CreateUpdateHistory() {
   const [error, setError] = useState(null);
 
   const handleFetch = async () => {
-    if (!lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days');
+    if (!startDate || !endDate) {
+      setError('Please provide both start date and end date');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
+      // lookbackDays always null - commented out feature
       const response = await getCreateUpdateHistory(
         startDate || null,
         endDate || null,
-        lookbackDays,
+        null,
         tableName || null,
         operationType || null
       );

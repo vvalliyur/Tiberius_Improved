@@ -55,15 +55,16 @@ function AgentReports() {
   ];
 
   const handleFetch = async () => {
-    if (!lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days');
+    if (!startDate || !endDate) {
+      setError('Please provide both start date and end date');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getAgentReports(startDate || null, endDate || null, lookbackDays);
+      // lookbackDays always null - commented out feature
+      const response = await getAgentReports(startDate || null, endDate || null, null);
       setAggregatedData(response.aggregated?.data || []);
       setDetailedData(response.detailed?.data || []);
     } catch (err) {

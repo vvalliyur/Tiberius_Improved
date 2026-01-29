@@ -99,13 +99,12 @@ function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 w-full" data-page-container style={{ minHeight: '1000px' }}>
-      <div className="space-y-2 h-[88px] flex flex-col justify-center flex-shrink-0">
-        <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-lg text-muted-foreground">Overview of tips, players, and agents</p>
+    <div className="w-full" data-page-container style={{ minHeight: '1000px' }}>
+      <div className="flex-shrink-0 mb-2">
+        <h1 className="text-4xl font-bold tracking-tight mb-0">Dashboard</h1>
       </div>
 
-      <div className="min-h-[60px] flex items-center flex-shrink-0">
+      <div className="min-h-[60px] flex items-center flex-shrink-0 mb-4">
         {error && (
           <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm w-full">
             {error}
@@ -113,7 +112,7 @@ function Dashboard() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 flex-shrink-0">
+      <div className="grid gap-4 md:grid-cols-3 flex-shrink-0 mb-6">
         <Card className="h-[120px] flex flex-col">
           <CardHeader className="flex-1 flex flex-col justify-center">
             <CardDescription className="mb-2">Total Tips (All Time)</CardDescription>
@@ -143,7 +142,7 @@ function Dashboard() {
       </div>
 
       {dashboardData.blocked_players?.length > 0 && (
-        <Card className="overflow-hidden flex-shrink-0">
+        <Card className="overflow-hidden flex-shrink-0 mt-6">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
             <CardTitle className="text-2xl">Blocked Players</CardTitle>
             <CardDescription className="text-base">
@@ -162,7 +161,7 @@ function Dashboard() {
       )}
 
       {dashboardData.over_credit_limit_players?.length > 0 && (
-        <Card className="overflow-hidden flex-shrink-0">
+        <Card className="overflow-hidden flex-shrink-0 mt-6">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
             <CardTitle className="text-2xl">Players Over Credit Limit</CardTitle>
             <CardDescription className="text-base">
@@ -180,7 +179,7 @@ function Dashboard() {
         </Card>
       )}
 
-      <Card className="overflow-hidden flex-shrink-0">
+      <Card className="overflow-hidden flex-shrink-0 mt-6">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
           <CardTitle className="text-2xl">Agent Report</CardTitle>
           <CardDescription className="text-base">
@@ -197,7 +196,7 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden flex-shrink-0">
+      <Card className="overflow-hidden flex-shrink-0 mt-6">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
           <CardTitle className="text-2xl">Player Aggregates</CardTitle>
           <CardDescription className="text-base">

@@ -44,15 +44,16 @@ function Dashboard() {
   ], []);
 
   const handleFetchGameData = async () => {
-    if (!lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days');
+    if (!startDate || !endDate) {
+      setError('Please provide both start date and end date');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getData(startDate || null, endDate || null, lookbackDays, null);
+      // lookbackDays always null - commented out feature
+      const response = await getData(startDate || null, endDate || null, null, null);
       setGameData(response.data || []);
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Failed to fetch game data');
@@ -63,15 +64,16 @@ function Dashboard() {
   };
 
   const handleFetchAggregatedData = async () => {
-    if (!lookbackDays && (!startDate || !endDate)) {
-      setError('Please provide either date range or lookback days');
+    if (!startDate || !endDate) {
+      setError('Please provide both start date and end date');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getAggregatedData(startDate || null, endDate || null, lookbackDays);
+      // lookbackDays always null - commented out feature
+      const response = await getAggregatedData(startDate || null, endDate || null, null);
       setAggregatedData(response.data || []);
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Failed to fetch aggregated data');

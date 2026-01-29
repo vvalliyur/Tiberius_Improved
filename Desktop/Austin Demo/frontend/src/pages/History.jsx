@@ -96,11 +96,12 @@ function History() {
     setError(null);
     try {
       const playerIdsString = selectedPlayerIds.join(',');
+      // lookbackDays always null - commented out feature
       const response = await getPlayerHistory(
         startDate || null,
         endDate || null,
         playerIdsString,
-        lookbackDays || null
+        null
       );
       setAggregatedData(response.aggregated || []);
       setIndividualRecords(response.individual_records || []);

@@ -381,7 +381,8 @@ export default function DateRangeFilter({
           </div>
         </div>
 
-        <div className="flex-1 min-w-[150px]">
+        {/* Lookback Days selector - commented out, may add back later */}
+        {/* <div className="flex-1 min-w-[150px]">
           <Label htmlFor="lookback" className="text-sm mb-1.5 block">Lookback Days</Label>
           <Input
             id="lookback"
@@ -391,7 +392,7 @@ export default function DateRangeFilter({
             value={lookbackDays || ''}
             onChange={(e) => onLookbackDaysChange(e.target.value ? parseInt(e.target.value) : null)}
           />
-        </div>
+        </div> */}
 
         <div className="flex-shrink-0">
           <Button 
@@ -434,18 +435,16 @@ export default function DateRangeFilter({
         </div>
       </div>
 
-      {(startDate || endDate || lookbackDays) && (
+      {(startDate || endDate) && (
         <div className="mt-3 pt-3 border-t">
           <p className="text-xs text-muted-foreground">
-            {lookbackDays 
-              ? `Using lookback: ${lookbackDays} days from today`
-              : startDate && endDate 
-                ? `Date range: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}`
-                : startDate
-                  ? `Start date: ${formatDisplayDate(startDate)}`
-                  : endDate
-                    ? `End date: ${formatDisplayDate(endDate)}`
-                    : ''}
+            {startDate && endDate 
+              ? `Date range: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}`
+              : startDate
+                ? `Start date: ${formatDisplayDate(startDate)}`
+                : endDate
+                  ? `End date: ${formatDisplayDate(endDate)}`
+                  : ''}
           </p>
         </div>
       )}
