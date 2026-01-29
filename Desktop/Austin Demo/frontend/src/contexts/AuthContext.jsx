@@ -22,6 +22,10 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error getting session:', error);
+        // Don't block the app if Supabase is misconfigured
+        if (error.message && error.message.includes('Invalid API key')) {
+          console.warn('Supabase API key may be invalid. Check your .env file.');
+        }
         setLoading(false);
         return;
       }
@@ -33,13 +37,23 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }).catch((err) => {
       console.error('Error in getSession:', err);
+      // If it's a network error, the backend/Supabase might not be available
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        console.warn('Network error - Supabase may not be accessible. Check your connection and Supabase URL.');
+      }
       setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Suppress token refresh errors if Supabase is not properly configured
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('Token refresh failed - Supabase may not be configured correctly');
+        return;
+      }
+      
       if (session) {
         setUser(session.user);
         setToken(session.access_token);

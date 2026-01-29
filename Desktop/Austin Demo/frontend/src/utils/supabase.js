@@ -6,7 +6,13 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // Create client with fallback values to prevent crashes
 // The app will show an error message if these aren't set properly
 export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    })
   : createClient('https://placeholder.supabase.co', 'placeholder-key');
 
 // Helper function to check if input is an email
@@ -38,6 +44,13 @@ export const signInWithEmailOrUsername = async (identifier, password) => {
       );
 
       if (!response.ok) {
+        // If backend is not available, return a helpful error
+        if (response.status === 0 || response.type === 'opaque') {
+          return {
+            data: null,
+            error: { message: 'Cannot connect to server. Please make sure the backend is running on http://localhost:8000' },
+          };
+        }
         const errorData = await response.json().catch(() => ({}));
         return {
           data: null,
@@ -54,6 +67,13 @@ export const signInWithEmailOrUsername = async (identifier, password) => {
       });
       return { data, error };
     } catch (err) {
+      // Network error - backend likely not running
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        return {
+          data: null,
+          error: { message: 'Cannot connect to server. Please make sure the backend is running on http://localhost:8000' },
+        };
+      }
       return {
         data: null,
         error: { message: 'Failed to look up username. Please try again.' },

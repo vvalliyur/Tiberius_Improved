@@ -43,9 +43,42 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 SUPABASE_JWT_SECRET = os.getenv('SUPABASE_JWT_SECRET')
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError('SUPABASE_URL and SUPABASE_KEY must be set in environment variables')
+    error_msg = (
+        'SUPABASE_URL and SUPABASE_KEY must be set in environment variables.\n'
+        'Please create a .env file in the backend directory with:\n'
+        '  SUPABASE_URL=https://your-project.supabase.co\n'
+        '  SUPABASE_KEY=your-anon-key\n'
+        '  SUPABASE_JWT_SECRET=your-jwt-secret (optional for HS256 tokens)'
+    )
+    raise ValueError(error_msg)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Validate SUPABASE_URL format
+if not SUPABASE_URL.startswith('http://') and not SUPABASE_URL.startswith('https://'):
+    raise ValueError(
+        f'SUPABASE_URL must start with http:// or https://. Got: {SUPABASE_URL}\n'
+        'Example: https://your-project.supabase.co'
+    )
+
+# Check if URL looks valid (contains a domain)
+if '.' not in SUPABASE_URL.replace('http://', '').replace('https://', '').split('/')[0]:
+    raise ValueError(
+        f'SUPABASE_URL appears to be invalid. Got: {SUPABASE_URL}\n'
+        'Example: https://your-project.supabase.co'
+    )
+
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as e:
+    error_msg = (
+        f'Failed to create Supabase client.\n'
+        f'Error: {str(e)}\n'
+        f'Please check:\n'
+        f'  1. SUPABASE_URL is correct: {SUPABASE_URL[:50]}...\n'
+        f'  2. SUPABASE_KEY is correct\n'
+        f'  3. Your network connection is working\n'
+        f'  4. The Supabase project is accessible'
+    )
+    raise ValueError(error_msg)
 
 security = HTTPBearer()
 get_current_user = create_get_current_user(security, SUPABASE_URL, SUPABASE_KEY, SUPABASE_JWT_SECRET)
@@ -64,7 +97,76 @@ async def root():
 
 @app.get('/health')
 async def health_check():
-    return {'status': 'healthy'}
+    """Health check endpoint that also verifies Supabase connection."""
+    try:
+        # Try a simple query to verify Supabase connection
+        supabase.table('agents').select('agent_id').limit(1).execute()
+        return {
+            'status': 'healthy',
+            'supabase': 'connected',
+            'supabase_url': SUPABASE_URL[:50] + '...' if SUPABASE_URL else 'not configured'
+        }
+    except Exception as e:
+        return {
+            'status': 'degraded',
+            'supabase': 'disconnected',
+            'error': str(e)[:100] if str(e) else 'Unknown error',
+            'message': 'Backend is running but Supabase connection failed. Check your SUPABASE_URL and SUPABASE_KEY.'
+        }
+
+
+@app.post('/auth/lookup-email')
+async def lookup_email_by_username(username: str = Query(..., description='Username to look up')):
+    """Look up email address by username. No authentication required for this endpoint."""
+    try:
+        response = supabase.rpc('get_email_by_username', {'username_param': username}).execute()
+        # RPC returns a list of rows, each row is a dict with 'email' key
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail='Username not found')
+        # The RPC function returns rows with 'email' field
+        email_row = response.data[0] if isinstance(response.data[0], dict) else None
+        if not email_row:
+            raise HTTPException(status_code=404, detail='Email not found for username')
+        email = email_row.get('email') if isinstance(email_row, dict) else None
+        if not email:
+            raise HTTPException(status_code=404, detail='Email not found for username')
+        return {'email': email}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to look up email: {str(e)}')
+
+
+@app.post('/auth/create-username')
+async def create_username(username_data: dict = Body(...), current_user: User = Depends(get_current_user)):
+    """Create username mapping for the current user. Requires authentication."""
+    try:
+        username = username_data.get('username')
+        if not username:
+            raise HTTPException(status_code=400, detail='Username is required')
+        
+        # Check if username already exists
+        existing = supabase.table('user_usernames').select('*').eq('username', username).execute()
+        if existing.data:
+            raise HTTPException(status_code=409, detail='Username already taken')
+        
+        # Check if user already has a username
+        existing_user = supabase.table('user_usernames').select('*').eq('user_id', current_user.id).execute()
+        if existing_user.data:
+            # Update existing username
+            supabase.table('user_usernames').update({'username': username}).eq('user_id', current_user.id).execute()
+        else:
+            # Create new username mapping
+            supabase.table('user_usernames').insert({
+                'user_id': current_user.id,
+                'username': username
+            }).execute()
+        
+        return {'message': 'Username created successfully', 'username': username}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to create username: {str(e)}')
 
 
 @app.get('/get_data')

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Moon, Sun } from 'lucide-react';
@@ -8,18 +9,57 @@ export default function Layout({ children, activePage, onPageChange }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef(null);
+  const userMenuButtonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+
+  const updateDropdownPosition = () => {
+    if (userMenuButtonRef.current) {
+      const buttonRect = userMenuButtonRef.current.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
+      
+      setDropdownPosition({
+        top: buttonRect.bottom + scrollY + 8,
+        right: window.innerWidth - buttonRect.right - scrollX,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isUserMenuOpen) {
+      updateDropdownPosition();
+      
+      const handleScroll = () => updateDropdownPosition();
+      const handleResize = () => updateDropdownPosition();
+      
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isUserMenuOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      if (
+        userMenuButtonRef.current &&
+        !userMenuButtonRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
         setIsUserMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isUserMenuOpen]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -101,8 +141,9 @@ export default function Layout({ children, activePage, onPageChange }) {
                 )}
               </Button>
               
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative">
                 <Button
+                  ref={userMenuButtonRef}
                   variant="ghost"
                   className="text-base px-4 py-2 rounded-full hover:bg-accent transition-colors"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -110,19 +151,6 @@ export default function Layout({ children, activePage, onPageChange }) {
                   <span className="hidden sm:inline">{user?.email}</span>
                   <span className="sm:hidden">User</span>
                 </Button>
-                {isUserMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 bg-popover border rounded-xl shadow-elevated-lg z-50 min-w-[160px] overflow-hidden animate-in fade-in-0 zoom-in-95">
-                    <div className="px-4 py-2 text-sm text-muted-foreground border-b">
-                      {user?.email}
-                    </div>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                      onClick={logout}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -134,6 +162,31 @@ export default function Layout({ children, activePage, onPageChange }) {
           {children}
         </div>
       </main>
+
+      {isUserMenuOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed bg-popover border rounded-xl shadow-elevated-lg z-[9999] min-w-[160px] overflow-hidden animate-in fade-in-0 zoom-in-95"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            right: `${dropdownPosition.right}px`,
+          }}
+        >
+          <div className="px-4 py-2 text-sm text-muted-foreground border-b">
+            {user?.email}
+          </div>
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+            onClick={() => {
+              logout();
+              setIsUserMenuOpen(false);
+            }}
+          >
+            Logout
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

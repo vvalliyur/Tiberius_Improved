@@ -68,7 +68,14 @@ export default function Login({ onLogin }) {
         }
       }
     } catch (err) {
-      setError(err.message || 'An error occurred');
+      // Provide more helpful error messages
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        setError('Cannot connect to server. Please make sure the backend is running on http://localhost:8000');
+      } else if (err.message && err.message.includes('Invalid API key')) {
+        setError('Supabase configuration error. Please check your environment variables.');
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

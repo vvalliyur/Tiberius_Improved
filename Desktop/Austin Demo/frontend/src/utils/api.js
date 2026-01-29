@@ -33,17 +33,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors and network errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle network errors (backend not running)
+    if (!error.response && error.message) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.code === 'ERR_NETWORK') {
+        console.error('Network error - Backend may not be running:', error.message);
+        error.userMessage = 'Cannot connect to server. Please make sure the backend is running on http://localhost:8000';
+      }
+    }
+    
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       console.error('401 Unauthorized:', error.response?.data);
       console.error('Token in localStorage:', localStorage.getItem('supabase_token') ? 'Exists' : 'Missing');
       localStorage.removeItem('supabase_token');
+      error.userMessage = 'Session expired. Please log in again.';
       // Don't reload immediately - let user see the error
       // window.location.reload();
     }
+    
     return Promise.reject(error);
   }
 );

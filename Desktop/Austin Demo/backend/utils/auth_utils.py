@@ -8,14 +8,21 @@ from jwt.algorithms import ECAlgorithm
 from data.schemas.df_schemas import User
 
 def fetch_jwks_key(jwks_url: str, kid: str, api_key: str):
-    req = urllib.request.Request(jwks_url)
-    req.add_header('apikey', api_key)
-    with urllib.request.urlopen(req, timeout=5) as response:
-        jwks_data = json.loads(response.read().decode())
-        for key_data in jwks_data.get('keys', []):
-            if key_data.get('kid') == kid:
-                return key_data
-        raise ValueError(f"Key with kid '{kid}' not found in JWKS")
+    try:
+        req = urllib.request.Request(jwks_url)
+        req.add_header('apikey', api_key)
+        with urllib.request.urlopen(req, timeout=5) as response:
+            jwks_data = json.loads(response.read().decode())
+            for key_data in jwks_data.get('keys', []):
+                if key_data.get('kid') == kid:
+                    return key_data
+            raise ValueError(f"Key with kid '{kid}' not found in JWKS")
+    except urllib.error.URLError as e:
+        if 'nodename nor servname provided' in str(e) or 'not known' in str(e):
+            raise ValueError(f"Cannot resolve Supabase hostname. Check SUPABASE_URL environment variable. Error: {str(e)}")
+        raise ValueError(f"Failed to fetch JWKS from {jwks_url}: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Failed to fetch JWKS: {str(e)}")
 
 
 def create_get_current_user(security: HTTPBearer, supabase_url: str, supabase_key: str, supabase_jwt_secret: str | None):
@@ -47,7 +54,13 @@ def create_get_current_user(security: HTTPBearer, supabase_url: str, supabase_ke
                                 audience="authenticated",
                                 options={"verify_exp": True}
                             )
-                        except:
+                        except ValueError as e:
+                            # If JWKS fetch fails (e.g., DNS error), log and fall back to unverified decode
+                            print(f"Warning: Failed to fetch JWKS, using unverified token decode: {str(e)}")
+                            payload = jwt.decode(token, options={"verify_signature": False})
+                        except Exception as e:
+                            # For other errors, also fall back to unverified decode
+                            print(f"Warning: JWKS verification failed, using unverified token decode: {str(e)}")
                             payload = jwt.decode(token, options={"verify_signature": False})
                     else:
                         payload = jwt.decode(token, options={"verify_signature": False})
