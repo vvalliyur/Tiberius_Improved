@@ -3,6 +3,7 @@ import { getAgentReports } from '../utils/api';
 import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import './AgentReport.css';
 import './DetailedAgentReport.css';
