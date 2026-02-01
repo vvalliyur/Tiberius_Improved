@@ -20,8 +20,10 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react';
 
-export default function DataTable({ data, columns, isLoading = false, emptyMessage = "No data available", getRowClassName = null }) {
-  const [globalFilter, setGlobalFilter] = useState('');
+export default function DataTable({ data, columns, isLoading = false, emptyMessage = "No data available", getRowClassName = null, globalFilter: externalFilter, onGlobalFilterChange, hideSearch = false }) {
+  const [internalFilter, setInternalFilter] = useState('');
+  const globalFilter = externalFilter !== undefined ? externalFilter : internalFilter;
+  const setGlobalFilter = onGlobalFilterChange || setInternalFilter;
 
   const table = useReactTable({
     data: data || [],
@@ -44,17 +46,19 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search..."
-            value={globalFilter ?? ''}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-9"
-          />
+      {!hideSearch && (
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={globalFilter ?? ''}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
-      </div>
+      )}
       <div className="rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>

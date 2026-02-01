@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAgentReports } from '../utils/api';
 import DataTable from '../components/DataTable';
+import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import './AgentReport.css';
@@ -16,6 +17,7 @@ function AgentReports() {
   const [error, setError] = useState(null);
   const [expandedAgents, setExpandedAgents] = useState(new Set());
   const [copiedAgentId, setCopiedAgentId] = useState(null);
+  const [aggregatedSearch, setAggregatedSearch] = useState('');
 
   const aggregatedColumns = [
     { 
@@ -165,30 +167,26 @@ function AgentReports() {
       )}
 
       {aggregatedData.length > 0 && (
-        <div className="agent-report-section">
-          <h2 className="text-2xl font-semibold mb-4">Aggregated Report</h2>
-          <div className="report-summary mb-4">
-            <div className="summary-card">
-              <div className="summary-label">Total Agents</div>
-              <div className="summary-value">{aggregatedData.length}</div>
-            </div>
-            <div className="summary-card">
-              <div className="summary-label">Total Agent Tips</div>
-              <div className="summary-value">
-                {aggregatedData.reduce((sum, row) => sum + Number(row.agent_tips || 0), 0).toFixed(2)}
-              </div>
-            </div>
-          </div>
-
-          <div className="agent-report-table-wrapper">
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b">
+            <CardTitle>Aggregated Report</CardTitle>
+            <TableSearchBox
+              value={aggregatedSearch}
+              onChange={setAggregatedSearch}
+            />
+          </CardHeader>
+          <CardContent className="p-6">
             <DataTable
               data={aggregatedData}
               columns={aggregatedColumns}
               isLoading={isLoading}
               emptyMessage="No agent report data available. Adjust filters or upload game data"
+              globalFilter={aggregatedSearch}
+              onGlobalFilterChange={setAggregatedSearch}
+              hideSearch={true}
             />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {agents.length > 0 && (

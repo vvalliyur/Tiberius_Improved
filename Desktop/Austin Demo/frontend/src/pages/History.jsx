@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { getPlayerHistory, getPlayers, getAgents } from '../utils/api';
 import DataTable from '../components/DataTable';
+import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -23,6 +24,8 @@ function History() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
   const [error, setError] = useState(null);
+  const [aggregatedSearch, setAggregatedSearch] = useState('');
+  const [individualSearch, setIndividualSearch] = useState('');
 
   const playerListRef = useScrollbar();
   const mainContentRef = useScrollbar();
@@ -156,7 +159,7 @@ function History() {
           <Card className="h-full flex flex-col shadow-elevated" style={{ height: '100%' }}>
             <CardHeader className="bg-muted/30 border-b">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">Players</CardTitle>
+                <CardTitle className="text-lg">Players</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -167,9 +170,6 @@ function History() {
                   {selectedCount === filteredPlayers.length && filteredPlayers.length > 0 ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
-              <CardDescription className="text-base">
-                {selectedCount > 0 ? `${selectedCount} selected` : 'Select players to view history'}
-              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 flex-1 overflow-hidden">
               <div className="space-y-2 flex-shrink-0">
@@ -267,10 +267,11 @@ function History() {
           {aggregatedData.length > 0 && (
             <Card className="overflow-hidden">
               <CardHeader className="bg-muted/30 border-b">
-                <CardTitle className="text-2xl">Aggregated Statistics</CardTitle>
-                <CardDescription className="text-base">
-                  {aggregatedData.length} {aggregatedData.length === 1 ? 'player' : 'players'}
-                </CardDescription>
+                <CardTitle>Aggregated Statistics</CardTitle>
+                <TableSearchBox
+                  value={aggregatedSearch}
+                  onChange={setAggregatedSearch}
+                />
               </CardHeader>
               <CardContent className="p-6">
                 <DataTable
@@ -278,6 +279,9 @@ function History() {
                   columns={aggregatedColumns}
                   isLoading={isLoading}
                   emptyMessage="No aggregated data available"
+                  globalFilter={aggregatedSearch}
+                  onGlobalFilterChange={setAggregatedSearch}
+                  hideSearch={true}
                 />
               </CardContent>
             </Card>
@@ -286,10 +290,11 @@ function History() {
           {individualRecords.length > 0 && (
             <Card className="overflow-hidden">
               <CardHeader className="bg-muted/30 border-b">
-                <CardTitle className="text-2xl">Individual Records</CardTitle>
-                <CardDescription className="text-base">
-                  {individualRecords.length} {individualRecords.length === 1 ? 'record' : 'records'}
-                </CardDescription>
+                <CardTitle>Individual Records</CardTitle>
+                <TableSearchBox
+                  value={individualSearch}
+                  onChange={setIndividualSearch}
+                />
               </CardHeader>
               <CardContent className="p-6">
                 <DataTable
@@ -297,6 +302,9 @@ function History() {
                   columns={individualColumns}
                   isLoading={isLoading}
                   emptyMessage="No individual records available"
+                  globalFilter={individualSearch}
+                  onGlobalFilterChange={setIndividualSearch}
+                  hideSearch={true}
                 />
               </CardContent>
             </Card>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getDashboardData } from '../utils/api';
 import DataTable from '../components/DataTable';
+import TableSearchBox from '../components/TableSearchBox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import './Dashboard.css';
 
@@ -13,6 +14,10 @@ function Dashboard() {
     player_aggregates: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [blockedPlayersSearch, setBlockedPlayersSearch] = useState('');
+  const [overCreditLimitSearch, setOverCreditLimitSearch] = useState('');
+  const [agentReportSearch, setAgentReportSearch] = useState('');
+  const [playerAggregatesSearch, setPlayerAggregatesSearch] = useState('');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -144,10 +149,11 @@ function Dashboard() {
       {dashboardData.blocked_players?.length > 0 && (
         <Card className="overflow-hidden flex-shrink-0 mt-6">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-            <CardTitle className="text-2xl">Blocked Players</CardTitle>
-            <CardDescription className="text-base">
-              {dashboardData.blocked_players.length} blocked {dashboardData.blocked_players.length === 1 ? 'player' : 'players'}
-            </CardDescription>
+            <CardTitle>Blocked Players</CardTitle>
+            <TableSearchBox
+              value={blockedPlayersSearch}
+              onChange={setBlockedPlayersSearch}
+            />
           </CardHeader>
           <CardContent className="p-6 flex-shrink-0">
             <DataTable
@@ -155,6 +161,9 @@ function Dashboard() {
               columns={blockedPlayersColumns}
               isLoading={isLoading}
               emptyMessage="No blocked players"
+              globalFilter={blockedPlayersSearch}
+              onGlobalFilterChange={setBlockedPlayersSearch}
+              hideSearch={true}
             />
           </CardContent>
         </Card>
@@ -163,10 +172,11 @@ function Dashboard() {
       {dashboardData.over_credit_limit_players?.length > 0 && (
         <Card className="overflow-hidden flex-shrink-0 mt-6">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-            <CardTitle className="text-2xl">Players Over Credit Limit</CardTitle>
-            <CardDescription className="text-base">
-              {dashboardData.over_credit_limit_players.length} {dashboardData.over_credit_limit_players.length === 1 ? 'player' : 'players'} over limit
-            </CardDescription>
+            <CardTitle>Players Over Credit Limit</CardTitle>
+            <TableSearchBox
+              value={overCreditLimitSearch}
+              onChange={setOverCreditLimitSearch}
+            />
           </CardHeader>
           <CardContent className="p-6 flex-shrink-0">
             <DataTable
@@ -174,6 +184,9 @@ function Dashboard() {
               columns={overCreditLimitColumns}
               isLoading={isLoading}
               emptyMessage="No players over credit limit"
+              globalFilter={overCreditLimitSearch}
+              onGlobalFilterChange={setOverCreditLimitSearch}
+              hideSearch={true}
             />
           </CardContent>
         </Card>
@@ -181,10 +194,11 @@ function Dashboard() {
 
       <Card className="overflow-hidden flex-shrink-0 mt-6">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-          <CardTitle className="text-2xl">Agent Report</CardTitle>
-          <CardDescription className="text-base">
-            {dashboardData.agent_report.length} agents
-          </CardDescription>
+          <CardTitle>Agent Report</CardTitle>
+          <TableSearchBox
+            value={agentReportSearch}
+            onChange={setAgentReportSearch}
+          />
         </CardHeader>
         <CardContent className="p-6 flex-shrink-0">
           <DataTable
@@ -192,16 +206,20 @@ function Dashboard() {
             columns={agentColumns}
             isLoading={isLoading}
             emptyMessage="No agent data available"
+            globalFilter={agentReportSearch}
+            onGlobalFilterChange={setAgentReportSearch}
+            hideSearch={true}
           />
         </CardContent>
       </Card>
 
       <Card className="overflow-hidden flex-shrink-0 mt-6">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-          <CardTitle className="text-2xl">Player Aggregates</CardTitle>
-          <CardDescription className="text-base">
-            {dashboardData.player_aggregates.length} players
-          </CardDescription>
+          <CardTitle>Player Aggregates</CardTitle>
+          <TableSearchBox
+            value={playerAggregatesSearch}
+            onChange={setPlayerAggregatesSearch}
+          />
         </CardHeader>
         <CardContent className="p-6 flex-shrink-0">
           <DataTable
@@ -210,6 +228,9 @@ function Dashboard() {
             isLoading={isLoading}
             emptyMessage="No player data available"
             getRowClassName={getRowClassName}
+            globalFilter={playerAggregatesSearch}
+            onGlobalFilterChange={setPlayerAggregatesSearch}
+            hideSearch={true}
           />
         </CardContent>
       </Card>

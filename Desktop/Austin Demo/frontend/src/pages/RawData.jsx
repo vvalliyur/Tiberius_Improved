@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { getData, getAggregatedData } from '../utils/api';
 import DataTable from '../components/DataTable';
+import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
@@ -13,6 +14,7 @@ function Dashboard() {
   const [aggregatedData, setAggregatedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchFilter, setSearchFilter] = useState('');
 
   const gameDataColumns = useMemo(() => [
     { accessorKey: 'game_code', header: 'Game Code' },
@@ -140,13 +142,13 @@ function Dashboard() {
 
       <Card className="overflow-hidden">
         <CardHeader className="bg-muted/30 border-b">
-          <CardTitle className="text-2xl">
+          <CardTitle>
             {activeTab === 'game-data' ? 'Game Data' : 'Aggregated Data by Player'}
           </CardTitle>
-          <CardDescription className="text-base">
-            {activeTab === 'game-data' ? gameData.length : aggregatedData.length}{' '}
-            {activeTab === 'game-data' ? 'records' : 'players'}
-          </CardDescription>
+          <TableSearchBox
+            value={searchFilter}
+            onChange={setSearchFilter}
+          />
         </CardHeader>
         <CardContent className="p-6">
           <DataTable
@@ -154,6 +156,9 @@ function Dashboard() {
             columns={activeTab === 'game-data' ? gameDataColumns : aggregatedDataColumns}
             isLoading={isLoading}
             emptyMessage={`No ${activeTab === 'game-data' ? 'game data' : 'aggregated data'} available`}
+            globalFilter={searchFilter}
+            onGlobalFilterChange={setSearchFilter}
+            hideSearch={true}
           />
         </CardContent>
       </Card>
