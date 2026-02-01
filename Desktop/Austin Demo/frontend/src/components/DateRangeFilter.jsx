@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, X } from 'lucide-react';
 import { Button } from './ui/button';
@@ -21,6 +21,8 @@ export default function DateRangeFilter({
   showClubCode = false
 }) {
   const [openCalendar, setOpenCalendar] = useState(null); // 'start' | 'end' | null
+  const [startDateInput, setStartDateInput] = useState('');
+  const [endDateInput, setEndDateInput] = useState('');
   const startDateInputRef = useRef(null);
   const endDateInputRef = useRef(null);
   const startDateContainerRef = useRef(null);
@@ -32,6 +34,49 @@ export default function DateRangeFilter({
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${month}/${day}/${year}`;
+  };
+
+  const parseDateInput = (value) => {
+    // Only parse MM/DD/YYYY format
+    if (!value || value.trim() === '') return null;
+    
+    // Try MM/DD/YYYY or M/D/YYYY format
+    const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (slashMatch) {
+      const [, month, day, year] = slashMatch;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    }
+    
+    return null;
+  };
+
+  // Sync input values when dates change externally (e.g., from calendar picker)
+  useEffect(() => {
+    if (startDate) {
+      setStartDateInput(formatDateForInput(startDate));
+    } else {
+      setStartDateInput('');
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    if (endDate) {
+      setEndDateInput(formatDateForInput(endDate));
+    } else {
+      setEndDateInput('');
+    }
+  }, [endDate]);
 
   const handleDateSelect = (date) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -151,15 +196,17 @@ export default function DateRangeFilter({
 
     const selectedDate = openCalendar === 'start' ? startDate : endDate;
     const containerRef = openCalendar === 'start' ? startDateContainerRef : endDateContainerRef;
-    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const [position, setPosition] = useState({ top: 0, left: 0, visible: false });
 
-    useEffect(() => {
+    // Use useLayoutEffect for synchronous positioning before paint
+    useLayoutEffect(() => {
       const updatePosition = () => {
         if (containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect();
           setPosition({
             top: rect.bottom + 8, // 8px gap below input
             left: rect.left,
+            visible: true,
           });
         }
       };
@@ -210,6 +257,8 @@ export default function DateRangeFilter({
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
+          opacity: position.visible ? 1 : 0,
+          pointerEvents: position.visible ? 'auto' : 'none',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -267,18 +316,15 @@ export default function DateRangeFilter({
                 const dateStr = date.toISOString().split('T')[0];
                 const isToday = dateStr === todayStart.toISOString().split('T')[0];
                 const isSelected = selectedDate === dateStr;
-                const isPast = date < todayStart && !isToday;
 
                 return (
                   <button
                     key={day}
                     onClick={() => handleDateSelect(date)}
-                    disabled={isPast}
                     className={cn(
                       "p-1 text-sm rounded-md transition-colors",
                       isSelected && "bg-primary text-primary-foreground font-semibold",
-                      !isSelected && !isPast && "hover:bg-muted",
-                      isPast && "opacity-30 cursor-not-allowed",
+                      !isSelected && "hover:bg-muted",
                       isToday && !isSelected && "bg-muted font-medium"
                     )}
                   >
@@ -304,13 +350,37 @@ export default function DateRangeFilter({
               id="start-date"
               ref={startDateInputRef}
               type="text"
-              readOnly
-              className="w-full pr-10 cursor-pointer"
-              value={startDate ? formatDisplayDate(startDate) : ''}
-              onClick={() => {
-                setOpenCalendar(openCalendar === 'start' ? null : 'start');
+              className="w-full pr-10"
+              value={startDateInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                setStartDateInput(value);
+                const parsed = parseDateInput(value);
+                if (parsed) {
+                  onStartDateChange(parsed);
+                } else if (value === '') {
+                  onStartDateChange('');
+                }
               }}
-              placeholder="Select start date"
+              onBlur={() => {
+                // On blur, if input doesn't match valid date, reset to formatted date
+                if (startDateInput && !parseDateInput(startDateInput)) {
+                  if (startDate) {
+                    setStartDateInput(formatDateForInput(startDate));
+                  } else {
+                    setStartDateInput('');
+                  }
+                }
+              }}
+              onFocus={(e) => {
+                e.target.select();
+                setOpenCalendar('start');
+              }}
+              onClick={(e) => {
+                e.target.focus();
+                e.target.select();
+              }}
+              placeholder="MM/DD/YYYY"
             />
             <Button
               variant="ghost"
@@ -346,13 +416,37 @@ export default function DateRangeFilter({
               id="end-date"
               ref={endDateInputRef}
               type="text"
-              readOnly
-              className="w-full pr-10 cursor-pointer"
-              value={endDate ? formatDisplayDate(endDate) : ''}
-              onClick={() => {
-                setOpenCalendar(openCalendar === 'end' ? null : 'end');
+              className="w-full pr-10"
+              value={endDateInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEndDateInput(value);
+                const parsed = parseDateInput(value);
+                if (parsed) {
+                  onEndDateChange(parsed);
+                } else if (value === '') {
+                  onEndDateChange('');
+                }
               }}
-              placeholder="Select end date"
+              onBlur={() => {
+                // On blur, if input doesn't match valid date, reset to formatted date
+                if (endDateInput && !parseDateInput(endDateInput)) {
+                  if (endDate) {
+                    setEndDateInput(formatDateForInput(endDate));
+                  } else {
+                    setEndDateInput('');
+                  }
+                }
+              }}
+              onFocus={(e) => {
+                e.target.select();
+                setOpenCalendar('end');
+              }}
+              onClick={(e) => {
+                e.target.focus();
+                e.target.select();
+              }}
+              placeholder="MM/DD/YYYY"
             />
             <Button
               variant="ghost"
