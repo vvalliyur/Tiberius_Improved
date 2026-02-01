@@ -147,9 +147,9 @@ function Dashboard() {
       </div>
 
       {dashboardData.blocked_players?.length > 0 && (
-        <Card className="overflow-hidden flex-shrink-0 mt-6">
-          <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-            <CardTitle>Blocked Players</CardTitle>
+        <Card className="overflow-hidden flex-shrink-0 mt-6 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
+          <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
+            <CardTitle className="text-red-700 dark:text-red-300">Blocked Players</CardTitle>
             <TableSearchBox
               value={blockedPlayersSearch}
               onChange={setBlockedPlayersSearch}
