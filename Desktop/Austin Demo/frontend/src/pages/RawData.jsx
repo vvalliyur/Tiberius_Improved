@@ -16,7 +16,6 @@ function Dashboard() {
 
   const gameDataColumns = useMemo(() => [
     { accessorKey: 'game_code', header: 'Game Code' },
-    { accessorKey: 'club_code', header: 'Club Code' },
     { accessorKey: 'player_id', header: 'Player ID' },
     { accessorKey: 'player_name', header: 'Player Name' },
     { accessorKey: 'date_started', header: 'Date Started', cell: info => new Date(info.getValue()).toLocaleString() },
