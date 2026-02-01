@@ -208,94 +208,62 @@ function AgentReports() {
                 <div key={agent.agent_id} className="agent-section">
                   <div className="agent-header">
                     <div className="agent-info">
-                      <h3 className="text-xl font-semibold">{agent.agent_name}</h3>
-                      <div className="agent-meta">
-                        <span className="agent-id">ID: {agent.agent_id}</span>
-                        <span className="deal-percent">Deal: {(Number(agent.deal_percent) * 100).toFixed(2)}%</span>
-                        <div className="agent-header-buttons">
-                          <button
-                            type="button"
-                            onClick={() => toggleTable(agent.agent_id)}
-                            className="header-action-button collapse-button"
-                          >
-                            {isExpanded ? (
-                              <>
-                                <ChevronUp className="h-4 w-4 mr-1" />
-                                Collapse
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4 mr-1" />
-                                Expand
-                              </>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => copyTableToClipboard(agent)}
-                            className="header-action-button copy-button"
-                          >
-                            {copiedAgentId === agent.agent_id ? (
-                              <>
-                                <Check className="h-4 w-4 mr-1" />
-                                Copied!
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-4 w-4 mr-1" />
-                                Copy
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                      <h3 className="text-2xl font-semibold m-0">{agent.agent_name}</h3>
                     </div>
                     <div className="agent-summary">
                       <div className="summary-item">
-                        <span className="summary-label">Total Players</span>
-                        <span className="summary-value">{agent.players.length}</span>
+                        <span className="summary-label text-center">Players</span>
+                        <span className="summary-value text-center">{agent.players.length}</span>
                       </div>
                       <div className="summary-item">
-                        <span className="summary-label">Total Tips</span>
-                        <span className="summary-value">{agent.total_tips.toFixed(2)}</span>
+                        <span className="summary-label text-center">Total Tips</span>
+                        <span className="summary-value text-center">{agent.total_tips.toFixed(2)}</span>
                       </div>
                       <div className="summary-item">
-                        <span className="summary-label">Agent Tips</span>
-                        <span className="summary-value highlight">{agent.total_agent_tips.toFixed(2)}</span>
+                        <span className="summary-label text-center">Agent Tips</span>
+                        <span className="summary-value text-center highlight">{agent.total_agent_tips.toFixed(2)}</span>
                       </div>
+                    </div>
+                    <div className="agent-header-buttons">
+                      <button
+                        type="button"
+                        onClick={() => toggleTable(agent.agent_id)}
+                        className="header-action-button collapse-button"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copyTableToClipboard(agent)}
+                        className="header-action-button copy-button"
+                      >
+                        {copiedAgentId === agent.agent_id ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   <div className="table-section">
                     <table className="players-table">
-                      <thead>
-                        <tr>
-                          <th>Player ID</th>
-                          <th>Player Name</th>
-                          <th>Deal %</th>
-                          <th>Total Hands</th>
-                          <th className="tips-header">Total Tips</th>
-                          <th className="tips-header">Agent Tips</th>
-                          <th className="collapse-header-cell">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleTable(agent.agent_id);
-                              }}
-                              className="table-header-button"
-                              title={isExpanded ? "Collapse table" : "Expand table"}
-                              aria-label={isExpanded ? "Collapse table" : "Expand table"}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="icon" />
-                              ) : (
-                                <ChevronDown className="icon" />
-                              )}
-                            </button>
-                          </th>
-                        </tr>
-                      </thead>
+                      {isExpanded && (
+                        <thead>
+                          <tr>
+                            <th>Player ID</th>
+                            <th>Player Name</th>
+                            <th>Deal %</th>
+                            <th>Total Hands</th>
+                            <th className="tips-header">Total Tips</th>
+                            <th className="tips-header">Agent Tips</th>
+                          </tr>
+                        </thead>
+                      )}
                       {isExpanded ? (
                         <tbody>
                           {agent.players.map((player) => (
@@ -306,25 +274,15 @@ function AgentReports() {
                               <td>{player.total_hands.toLocaleString()}</td>
                               <td className="tips-cell">{player.total_tips.toFixed(2)}</td>
                               <td className="tips-cell">{player.agent_tips.toFixed(2)}</td>
-                              <td></td>
                             </tr>
                           ))}
                           <tr className="totals-row">
                             <td colSpan="4" className="totals-label">Total</td>
                             <td className="totals-value tips-cell">{agent.total_tips.toFixed(2)}</td>
                             <td className="totals-value tips-cell">{agent.total_agent_tips.toFixed(2)}</td>
-                            <td></td>
                           </tr>
                         </tbody>
-                      ) : (
-                        <tbody>
-                          <tr className="collapsed-message-row">
-                            <td colSpan="7" className="collapsed-message">
-                              {rowCount} {rowCount === 1 ? 'row' : 'rows'} hidden - click button to expand
-                            </td>
-                          </tr>
-                        </tbody>
-                      )}
+                      ) : null}
                     </table>
                   </div>
                 </div>

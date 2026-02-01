@@ -134,27 +134,45 @@ function DetailedAgentReport() {
               <div key={agent.agent_id} className="agent-section">
                 <div className="agent-header">
                   <div className="agent-info">
-                    <h2>{agent.agent_name}</h2>
-                    <span className="agent-id">ID: {agent.agent_id}</span>
-                    <span className="deal-percent">Deal: {agent.deal_percent}%</span>
+                    <h2 className="m-0 text-2xl font-semibold">{agent.agent_name}</h2>
                   </div>
                   <div className="agent-summary">
                     <div className="summary-item">
-                      <span className="summary-label">Total Players</span>
-                      <span className="summary-value">{agent.players.length}</span>
+                      <span className="summary-label text-center">Players</span>
+                      <span className="summary-value text-center">{agent.players.length}</span>
                     </div>
                     <div className="summary-item">
-                      <span className="summary-label">Total Hands</span>
-                      <span className="summary-value">{agent.total_hands.toLocaleString()}</span>
+                      <span className="summary-label text-center">Total Tips</span>
+                      <span className="summary-value text-center tips-value">{agent.total_tips.toFixed(2)}</span>
                     </div>
                     <div className="summary-item tips-summary">
-                      <span className="summary-label">Total Tips</span>
-                      <span className="summary-value tips-value">{agent.total_tips.toFixed(2)}</span>
+                      <span className="summary-label text-center">Agent Tips</span>
+                      <span className="summary-value text-center highlight agent-tips-value">{agent.total_agent_tips.toFixed(2)}</span>
                     </div>
-                    <div className="summary-item tips-summary">
-                      <span className="summary-label">Agent Tips</span>
-                      <span className="summary-value highlight agent-tips-value">{agent.total_agent_tips.toFixed(2)}</span>
-                    </div>
+                  </div>
+                  <div className="agent-header-buttons">
+                    <button
+                      type="button"
+                      onClick={() => toggleTable(agent.agent_id)}
+                      className="header-action-button collapse-button"
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyTableToClipboard(agent)}
+                      className="header-action-button copy-button"
+                    >
+                      {copiedAgentId === agent.agent_id ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -197,34 +215,18 @@ function DetailedAgentReport() {
 
                 <div className="table-section">
                   <table className="players-table">
-                    <thead>
-                      <tr>
-                        <th>Player ID</th>
-                        <th>Player Name</th>
-                        <th>Deal %</th>
-                        <th>Total Hands</th>
-                        <th className="tips-header">Total Tips</th>
-                        <th className="tips-header">Agent Tips</th>
-                        <th className="collapse-header-cell">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTable(agent.agent_id);
-                            }}
-                            className="table-header-button"
-                            title={isExpanded ? "Collapse table" : "Expand table"}
-                            aria-label={isExpanded ? "Collapse table" : "Expand table"}
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="icon" />
-                            ) : (
-                              <ChevronDown className="icon" />
-                            )}
-                          </button>
-                        </th>
-                      </tr>
-                    </thead>
+                    {isExpanded && (
+                      <thead>
+                        <tr>
+                          <th>Player ID</th>
+                          <th>Player Name</th>
+                          <th>Deal %</th>
+                          <th>Total Hands</th>
+                          <th className="tips-header">Total Tips</th>
+                          <th className="tips-header">Agent Tips</th>
+                        </tr>
+                      </thead>
+                    )}
                     {isExpanded ? (
                       <tbody>
                         {agent.players.map((player) => (
@@ -235,25 +237,15 @@ function DetailedAgentReport() {
                             <td>{player.total_hands.toLocaleString()}</td>
                             <td className="tips-cell">{player.total_tips.toFixed(2)}</td>
                             <td className="tips-cell">{player.agent_tips.toFixed(2)}</td>
-                            <td></td>
                           </tr>
                         ))}
                         <tr className="totals-row">
                           <td colSpan="4" className="totals-label">Total</td>
                           <td className="totals-value tips-cell">{agent.total_tips.toFixed(2)}</td>
                           <td className="totals-value tips-cell">{agent.total_agent_tips.toFixed(2)}</td>
-                          <td></td>
                         </tr>
                       </tbody>
-                    ) : (
-                      <tbody>
-                        <tr className="collapsed-message-row">
-                          <td colSpan="7" className="collapsed-message">
-                            {rowCount} {rowCount === 1 ? 'row' : 'rows'} hidden - click button to expand
-                          </td>
-                        </tr>
-                      </tbody>
-                    )}
+                    ) : null}
                   </table>
                 </div>
               </div>
