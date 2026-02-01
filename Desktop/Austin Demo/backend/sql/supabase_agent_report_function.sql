@@ -23,7 +23,7 @@ BEGIN
         COALESCE(SUM(g.profit), 0)::DECIMAL(10, 2) AS total_profit,
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips per game using rules, then sum
-        COALESCE(SUM(g.tips * get_deal_percent(a.agent_id, p.player_id, g.tips)), 0)::DECIMAL(10, 2) AS agent_tips,
+        COALESCE(SUM(g.tips * get_deal_percent(a.agent_id, g.tips)), 0)::DECIMAL(10, 2) AS agent_tips,
         COUNT(g.*)::BIGINT AS game_count
     FROM agents a
     INNER JOIN players p ON a.agent_id = p.agent_id

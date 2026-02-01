@@ -92,6 +92,7 @@ function AgentReports() {
     acc[agentId].players.push({
       player_id: row.player_id,
       player_name: row.player_name,
+      deal_percent: parseFloat(row.deal_percent || 0),
       total_hands: row.total_hands,
       total_tips: parseFloat(row.total_tips || 0),
       agent_tips: parseFloat(row.agent_tips || 0),
@@ -125,12 +126,12 @@ function AgentReports() {
   };
 
   const copyTableToClipboard = async (agent) => {
-    // Compact format: Player ID, Player Name, Total Tips, Agent Tips
+    // Compact format: Player ID, Player Name, Deal %, Total Tips, Agent Tips
     const rows = agent.players.map(player => 
-      `${player.player_id}, ${player.player_name || ''}, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`
+      `${player.player_id}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`
     );
     
-    const totalsRow = `Total, , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
+    const totalsRow = `Total, , , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
     
     const text = [...rows, totalsRow].join('\n');
     
@@ -271,6 +272,7 @@ function AgentReports() {
                         <tr>
                           <th>Player ID</th>
                           <th>Player Name</th>
+                          <th>Deal %</th>
                           <th>Total Hands</th>
                           <th className="tips-header">Total Tips</th>
                           <th className="tips-header">Agent Tips</th>
@@ -300,6 +302,7 @@ function AgentReports() {
                             <tr key={player.player_id}>
                               <td>{player.player_id}</td>
                               <td>{player.player_name}</td>
+                              <td>{(player.deal_percent * 100).toFixed(2)}%</td>
                               <td>{player.total_hands.toLocaleString()}</td>
                               <td className="tips-cell">{player.total_tips.toFixed(2)}</td>
                               <td className="tips-cell">{player.agent_tips.toFixed(2)}</td>
@@ -307,7 +310,7 @@ function AgentReports() {
                             </tr>
                           ))}
                           <tr className="totals-row">
-                            <td colSpan="3" className="totals-label">Total</td>
+                            <td colSpan="4" className="totals-label">Total</td>
                             <td className="totals-value tips-cell">{agent.total_tips.toFixed(2)}</td>
                             <td className="totals-value tips-cell">{agent.total_agent_tips.toFixed(2)}</td>
                             <td></td>
@@ -316,7 +319,7 @@ function AgentReports() {
                       ) : (
                         <tbody>
                           <tr className="collapsed-message-row">
-                            <td colSpan="6" className="collapsed-message">
+                            <td colSpan="7" className="collapsed-message">
                               {rowCount} {rowCount === 1 ? 'row' : 'rows'} hidden - click button to expand
                             </td>
                           </tr>

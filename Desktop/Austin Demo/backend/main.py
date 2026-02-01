@@ -52,20 +52,6 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     )
     raise ValueError(error_msg)
 
-# Validate SUPABASE_URL format
-if not SUPABASE_URL.startswith('http://') and not SUPABASE_URL.startswith('https://'):
-    raise ValueError(
-        f'SUPABASE_URL must start with http:// or https://. Got: {SUPABASE_URL}\n'
-        'Example: https://your-project.supabase.co'
-    )
-
-# Check if URL looks valid (contains a domain)
-if '.' not in SUPABASE_URL.replace('http://', '').replace('https://', '').split('/')[0]:
-    raise ValueError(
-        f'SUPABASE_URL appears to be invalid. Got: {SUPABASE_URL}\n'
-        'Example: https://your-project.supabase.co'
-    )
-
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
@@ -92,14 +78,12 @@ def response_to_lazyframe(response_data: list) -> pl.LazyFrame:
 
 @app.get('/')
 async def root():
-    return {'message': 'Poker Accounting System API'}
+    return {'message': 'Tiberius Accounting System API'}
 
 
 @app.get('/health')
 async def health_check():
-    """Health check endpoint that also verifies Supabase connection."""
     try:
-        # Try a simple query to verify Supabase connection
         supabase.table('agents').select('agent_id').limit(1).execute()
         return {
             'status': 'healthy',

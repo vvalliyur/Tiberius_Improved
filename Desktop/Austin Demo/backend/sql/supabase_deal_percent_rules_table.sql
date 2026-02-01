@@ -54,5 +54,5 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 -- Grant execute permission
-GRANT EXECUTE ON FUNCTION get_deal_percent(INTEGER, INTEGER, DECIMAL(10, 2)) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_deal_percent(INTEGER, DECIMAL(10, 2)) TO authenticated;
 

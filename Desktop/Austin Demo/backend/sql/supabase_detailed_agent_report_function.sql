@@ -21,20 +21,31 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
+    WITH player_totals AS (
+        SELECT 
+            a.agent_id,
+            g.player_id,
+            SUM(g.tips) AS total_tips
+        FROM agents a
+        INNER JOIN players p ON a.agent_id = p.agent_id
+        INNER JOIN games g ON g.player_id = p.player_id::TEXT
+        WHERE g.date_started >= start_date_param
+          AND g.date_ended <= end_date_param
+          AND p.agent_id IS NOT NULL
+          AND p.player_id IS NOT NULL
+        GROUP BY a.agent_id, g.player_id
+    )
     SELECT 
         a.agent_id::INTEGER,
         a.agent_name::VARCHAR(255),
-        -- Use the deal_percent from the rule that applies to the total tips for this player
-        -- This is an average/representative deal_percent for display purposes
+        -- Calculate deal_percent for each player based on their total tips
+        -- This represents the deal_percent that applies to the player's total tips amount
         COALESCE(
-            (SELECT deal_percent 
-             FROM agent_deal_percent_rules 
-             WHERE agent_id = a.agent_id 
-               AND (player_id = p.player_id OR player_id IS NULL)
-               AND threshold <= COALESCE(SUM(g.tips), 0)
-             ORDER BY 
-                 CASE WHEN player_id = p.player_id THEN 0 ELSE 1 END, -- Prefer player-specific
-                 threshold DESC
+            (SELECT r.deal_percent 
+             FROM agent_deal_percent_rules r
+             WHERE r.agent_id = a.agent_id 
+               AND r.threshold <= pt.total_tips
+             ORDER BY r.threshold DESC
              LIMIT 1),
             a.deal_percent
         )::DECIMAL(10, 3) AS deal_percent,
@@ -43,15 +54,17 @@ BEGIN
         COUNT(g.*)::BIGINT AS total_hands,
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips per game using rules, then sum
-        COALESCE(SUM(g.tips * get_deal_percent(a.agent_id, p.player_id, g.tips)), 0)::DECIMAL(10, 2) AS agent_tips
+        -- Each game uses the deal_percent that applies to that specific game's tips
+        COALESCE(SUM(g.tips * get_deal_percent(a.agent_id, g.tips)), 0)::DECIMAL(10, 2) AS agent_tips
     FROM agents a
     INNER JOIN players p ON a.agent_id = p.agent_id
     INNER JOIN games g ON g.player_id = p.player_id::TEXT
+    INNER JOIN player_totals pt ON pt.agent_id = a.agent_id AND pt.player_id = g.player_id
     WHERE g.date_started >= start_date_param
       AND g.date_ended <= end_date_param
       AND p.agent_id IS NOT NULL
       AND p.player_id IS NOT NULL
-    GROUP BY a.agent_id, a.agent_name, a.deal_percent, g.player_id, p.player_name, p.player_id
+    GROUP BY a.agent_id, a.agent_name, a.deal_percent, g.player_id, p.player_name, p.player_id, pt.total_tips
     ORDER BY a.agent_id, g.player_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
