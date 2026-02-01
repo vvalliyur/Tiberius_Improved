@@ -19,11 +19,6 @@ function AgentReports() {
 
   const aggregatedColumns = [
     { 
-      accessorKey: 'agent_id', 
-      header: 'Agent ID',
-      cell: info => <div className="text-center">{info.getValue()}</div>
-    },
-    { 
       accessorKey: 'agent_name', 
       header: 'Agent Name',
       cell: info => <div className="text-center">{info.getValue()}</div>
