@@ -158,14 +158,14 @@ function History() {
         <div className="w-80 flex-shrink-0" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
           <Card className="h-full flex flex-col shadow-elevated" style={{ height: '100%' }}>
             <CardHeader className="bg-muted/30 border-b">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <CardTitle className="text-lg">Players</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAll}
                   disabled={filteredPlayers.length === 0}
-                  className="rounded-full"
+                  className="rounded-full ml-auto"
                 >
                   {selectedCount === filteredPlayers.length && filteredPlayers.length > 0 ? 'Deselect All' : 'Select All'}
                 </Button>
