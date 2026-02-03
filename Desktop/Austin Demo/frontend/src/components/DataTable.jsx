@@ -20,7 +20,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react';
 
-export default function DataTable({ data, columns, isLoading = false, emptyMessage = "No data available", getRowClassName = null, globalFilter: externalFilter, onGlobalFilterChange, hideSearch = false }) {
+export default function DataTable({ data, columns, isLoading = false, emptyMessage = "No data available", getRowClassName = null, globalFilter: externalFilter, onGlobalFilterChange, hideSearch = false, searchBarActions = null }) {
   const [internalFilter, setInternalFilter] = useState('');
   const globalFilter = externalFilter !== undefined ? externalFilter : internalFilter;
   const setGlobalFilter = onGlobalFilterChange || setInternalFilter;
@@ -45,9 +45,9 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {!hideSearch && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-between">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -57,6 +57,11 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
               className="pl-9"
             />
           </div>
+          {searchBarActions && (
+            <div className="flex items-center gap-2">
+              {searchBarActions}
+            </div>
+          )}
         </div>
       )}
       <div className="rounded-lg border overflow-hidden">

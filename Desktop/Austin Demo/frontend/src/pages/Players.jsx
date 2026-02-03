@@ -146,12 +146,6 @@ function Players() {
 
   return (
     <div className="players-page">
-      <div className="page-header">
-        <button onClick={() => setIsFormOpen(true)} className="create-button">
-          Create Player
-        </button>
-      </div>
-
       {error && <div className="error-message">{error}</div>}
 
       {isFormOpen && (
@@ -276,6 +270,11 @@ function Players() {
         columns={columns}
         isLoading={isLoading}
         emptyMessage="No players found. Create your first player"
+        searchBarActions={
+          <button onClick={() => setIsFormOpen(true)} className="create-button">
+            Create Player
+          </button>
+        }
       />
     </div>
   );

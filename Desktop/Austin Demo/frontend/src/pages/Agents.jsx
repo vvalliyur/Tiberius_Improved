@@ -116,12 +116,6 @@ function Agents() {
 
   return (
     <div className="agents-page">
-      <div className="page-header">
-        <button onClick={() => setIsFormOpen(true)} className="create-button">
-          Create Agent
-        </button>
-      </div>
-
       {error && <div className="error-message">{error}</div>}
 
       {isFormOpen && (
@@ -206,6 +200,11 @@ function Agents() {
         columns={columns}
         isLoading={isLoading}
         emptyMessage="No agents found. Create your first agent"
+        searchBarActions={
+          <button onClick={() => setIsFormOpen(true)} className="create-button">
+            Create Agent
+          </button>
+        }
       />
     </div>
   );
