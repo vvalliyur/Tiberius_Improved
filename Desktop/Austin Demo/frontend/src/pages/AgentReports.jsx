@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { getAgentReports } from '../utils/api';
+import { getAgentReports, sendTelegramMessage } from '../utils/api';
 import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Check, Send } from 'lucide-react';
 import './AgentReport.css';
 import './DetailedAgentReport.css';
 
@@ -18,6 +18,7 @@ function AgentReports() {
   const [error, setError] = useState(null);
   const [expandedAgents, setExpandedAgents] = useState(new Set());
   const [copiedAgentId, setCopiedAgentId] = useState(null);
+  const [sentTelegramAgentId, setSentTelegramAgentId] = useState(null);
   const [aggregatedSearch, setAggregatedSearch] = useState('');
   const [groupBy, setGroupBy] = useState('player_id'); // 'player_id' or 'real_name'
   const [detailedDataByRealName, setDetailedDataByRealName] = useState([]);
@@ -158,9 +159,13 @@ function AgentReports() {
 
   const copyTableToClipboard = async (agent) => {
     // Compact format: Player ID, Player Name, Deal %, Total Tips, Agent Tips
-    const rows = agent.players.map(player => 
-      `${player.player_id}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`
-    );
+    const rows = agent.players.map(player => {
+      if (groupBy === 'real_name') {
+        return `${player.player_name || ''}, ${player.player_ids || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+      } else {
+        return `${player.player_id || ''}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+      }
+    });
     
     const totalsRow = `Total, , , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
     
@@ -172,6 +177,33 @@ function AgentReports() {
       setTimeout(() => setCopiedAgentId(null), 2000);
     } catch (err) {
       // Error handled silently
+    }
+  };
+
+  const sendToTelegram = async (agent) => {
+    try {
+      // Format the message similar to clipboard copy
+      const rows = agent.players.map(player => {
+        if (groupBy === 'real_name') {
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+        } else {
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+        }
+      });
+      
+      const totalsRow = `Total, , , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
+      
+      const header = groupBy === 'real_name' 
+        ? `Real Name, Player IDs, Deal %, Total Tips, Agent Tips`
+        : `Player ID, Player Name, Deal %, Total Tips, Agent Tips`;
+      
+      const message = `<b>${agent.agent_name} - Agent Report</b>\n\n${header}\n${rows.join('\n')}\n${totalsRow}`;
+      
+      await sendTelegramMessage(agent.agent_id, message);
+      setSentTelegramAgentId(agent.agent_id);
+      setTimeout(() => setSentTelegramAgentId(null), 2000);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send to Telegram');
     }
   };
 
@@ -323,11 +355,24 @@ function AgentReports() {
                         type="button"
                         onClick={() => copyTableToClipboard(agent)}
                         className="header-action-button copy-button"
+                        title="Copy to clipboard"
                       >
                         {copiedAgentId === agent.agent_id ? (
                           <Check className="h-4 w-4" />
                         ) : (
                           <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => sendToTelegram(agent)}
+                        className="header-action-button telegram-button"
+                        title="Send to Telegram"
+                      >
+                        {sentTelegramAgentId === agent.agent_id ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Send className="h-4 w-4" />
                         )}
                       </button>
                     </div>

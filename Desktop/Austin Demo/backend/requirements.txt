@@ -11,4 +11,6 @@ pandera==0.18.0
 pandas==2.1.4
 multimethod==1.9.1
 pytz==2024.1
+requests==2.31.0
+python-telegram-bot==20.7
 

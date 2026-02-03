@@ -145,5 +145,13 @@ export const getDashboardData = async () => {
   return response.data;
 };
 
+export const sendTelegramMessage = async (agentId, message) => {
+  const response = await api.post('/send_telegram_message', {
+    agent_id: agentId,
+    message: message
+  });
+  return response.data;
+};
+
 export default api;
 

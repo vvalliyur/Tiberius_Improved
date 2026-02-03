@@ -67,12 +67,18 @@ export default function Layout({ children, activePage, onPageChange }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
           <div className="flex items-center justify-between" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
             <div className="flex-shrink-0">
-              <h1 
-                className="text-3xl font-bold tracking-tight gradient-text cursor-pointer hover:opacity-80 transition-opacity"
+              <div 
+                className="cursor-pointer hover:opacity-80 transition-opacity flex items-center"
                 onClick={() => onPageChange('dashboard')}
+                style={{ height: '60px' }}
               >
-                Tiberius
-              </h1>
+                <img 
+                  src="/logo.png" 
+                  alt="Tiberius Accounting" 
+                  className="h-full w-auto object-contain"
+                  style={{ maxHeight: '60px', height: 'auto' }}
+                />
+              </div>
             </div>
             
             <div className="hidden md:flex flex-1 items-center justify-center gap-2">

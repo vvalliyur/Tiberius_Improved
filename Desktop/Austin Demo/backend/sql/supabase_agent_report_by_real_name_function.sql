@@ -46,7 +46,7 @@ BEGIN
             ) AS deal_percent,
             COALESCE(rnm.real_name, g.player_id) AS real_name,
             g.player_id,
-            COUNT(g.*)::BIGINT AS total_hands,
+            COALESCE(SUM(g.hands), 0)::BIGINT AS total_hands,
             COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
             COALESCE(SUM(g.tips * get_deal_percent(a.agent_id, g.tips)), 0)::DECIMAL(10, 2) AS agent_tips
         FROM agents a

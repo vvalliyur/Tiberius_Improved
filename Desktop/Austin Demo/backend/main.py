@@ -361,43 +361,6 @@ async def get_agent_reports(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/get_profit_tips_diagnostic')
-async def get_profit_tips_diagnostic(
-    start_date: date | None = Query(None, description="Start date for the query"),
-    end_date: date | None = Query(None, description="End date for the query"),
-    lookback_days: int | None = Query(None, description="Optional lookback period in days"),
-    current_user: User = Depends(get_current_user),
-):
-    """Diagnostic endpoint to identify discrepancies between profit and tips."""
-    try:
-        resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
-        
-        totals_response = supabase.rpc(
-            'get_profit_tips_totals',
-            {
-                'start_date_param': resolved_start.isoformat(),
-                'end_date_param': resolved_end.isoformat()
-            }
-        ).execute()
-        
-        mismatch_response = supabase.rpc(
-            'get_profit_tips_mismatch',
-            {
-                'start_date_param': resolved_start.isoformat(),
-                'end_date_param': resolved_end.isoformat()
-            }
-        ).execute()
-        
-        return {
-            'totals': totals_response.data or [],
-            'mismatches': mismatch_response.data or []
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get('/get_data_errors')
 async def get_data_errors(
     current_user: User = Depends(get_current_user),
@@ -1078,6 +1041,52 @@ async def upload_csv(file: UploadFile = File(...), current_user: User = Depends(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Failed to upload CSV: {str(e)}')
+
+
+@app.post('/send_telegram_message')
+async def send_telegram_message(
+    agent_id: int = Body(..., description='Agent ID to send message to'),
+    message: str = Body(..., description='Message text to send'),
+    current_user: User = Depends(get_current_user),
+):
+    """Send a message to an agent's Telegram chat via bot."""
+    try:
+        import requests
+        
+        TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+        if not TELEGRAM_BOT_TOKEN:
+            raise HTTPException(status_code=500, detail='TELEGRAM_BOT_TOKEN not configured')
+        
+        # Get chat_id from database
+        mapping_response = supabase.table('agent_telegram_mapping').select('chat_id').eq('agent_id', agent_id).execute()
+        
+        if not mapping_response.data or len(mapping_response.data) == 0:
+            raise HTTPException(status_code=404, detail=f'No Telegram chat_id found for agent_id {agent_id}')
+        
+        chat_id = mapping_response.data[0]['chat_id']
+        
+        # Send message via Telegram Bot API
+        telegram_api_url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
+        payload = {
+            'chat_id': chat_id,
+            'text': message,
+            'parse_mode': 'HTML'  # Allows basic HTML formatting
+        }
+        
+        response = requests.post(telegram_api_url, json=payload, timeout=10)
+        response.raise_for_status()
+        
+        return {
+            'success': True,
+            'message': 'Message sent successfully',
+            'chat_id': chat_id
+        }
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f'Failed to send Telegram message: {str(e)}')
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Error sending Telegram message: {str(e)}')
 
 
 if __name__ == '__main__':

@@ -26,7 +26,7 @@ BEGIN
             -- Get real_name from mapping, fallback to player_id if no mapping exists
             COALESCE(rnm.real_name, g.player_id) AS real_name,
             g.player_id,
-            COUNT(g.*)::BIGINT AS total_hands,
+            COALESCE(SUM(g.hands), 0)::BIGINT AS total_hands,
             COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips
         FROM agents a
         INNER JOIN players p ON a.agent_id = p.agent_id

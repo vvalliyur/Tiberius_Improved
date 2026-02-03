@@ -59,7 +59,7 @@ BEGIN
         pdp.deal_percent::DECIMAL(10, 3) AS deal_percent,
         g.player_id::VARCHAR(255),
         p.player_name::VARCHAR(255),
-        COUNT(g.*)::BIGINT AS total_hands,
+        COALESCE(SUM(g.hands), 0)::BIGINT AS total_hands,
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips using the deal_percent based on total tips (not per-game)
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) * pdp.deal_percent::DECIMAL(10, 3) AS agent_tips

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS games (
     tips DECIMAL(10, 2) NOT NULL,
     buy_in DECIMAL(10, 2) NOT NULL,
     total_tips DECIMAL(10, 2) NOT NULL,
+    hands INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     PRIMARY KEY (game_code, date_started, date_ended, player_id, profit, tips, total_tips)
 );
