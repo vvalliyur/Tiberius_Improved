@@ -49,6 +49,9 @@ yarn-error.log*
 frontend/dist/
 frontend/.vite/
 
+# Large binary files (use Git LFS if needed)
+# frontend/public/logo.png
+
 # Backend
 backend/__pycache__/
 backend/*.pyc
