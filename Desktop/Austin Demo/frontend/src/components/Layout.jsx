@@ -117,6 +117,16 @@ export default function Layout({ children, activePage, onPageChange }) {
               </Button>
               
               <Button
+                variant={activePage === 'check' ? 'default' : 'ghost'}
+                size="lg"
+                onClick={() => onPageChange('check')}
+                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
+                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
+              >
+                Check
+              </Button>
+              
+              <Button
                 variant={activePage === 'raw-data' ? 'default' : 'ghost'}
                 size="lg"
                 onClick={() => onPageChange('raw-data')}

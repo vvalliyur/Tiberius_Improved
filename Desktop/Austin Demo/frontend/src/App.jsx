@@ -8,6 +8,7 @@ import RawData from './pages/RawData';
 import Management from './pages/Management';
 import AgentReports from './pages/AgentReports';
 import History from './pages/History';
+import Check from './pages/Check';
 
 function App() {
   const { user, token, loading: authLoading } = useAuth();
@@ -99,6 +100,8 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key`}
         return <Management />;
       case 'history':
         return <History />;
+      case 'check':
+        return <Check />;
       default:
         return <Dashboard />;
     }

@@ -21,11 +21,7 @@ export function AuthProvider({ children }) {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
         // Don't block the app if Supabase is misconfigured
-        if (error.message && error.message.includes('Invalid API key')) {
-          console.warn('Supabase API key may be invalid. Check your .env file.');
-        }
         setLoading(false);
         return;
       }
@@ -36,11 +32,7 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     }).catch((err) => {
-      console.error('Error in getSession:', err);
       // If it's a network error, the backend/Supabase might not be available
-      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-        console.warn('Network error - Supabase may not be accessible. Check your connection and Supabase URL.');
-      }
       setLoading(false);
     });
 
@@ -50,7 +42,6 @@ export function AuthProvider({ children }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       // Suppress token refresh errors if Supabase is not properly configured
       if (event === 'TOKEN_REFRESHED' && !session) {
-        console.warn('Token refresh failed - Supabase may not be configured correctly');
         return;
       }
       
@@ -58,12 +49,10 @@ export function AuthProvider({ children }) {
         setUser(session.user);
         setToken(session.access_token);
         localStorage.setItem('supabase_token', session.access_token);
-        console.log('Auth state changed - Token stored:', session.access_token ? 'Yes' : 'No');
       } else {
         setUser(null);
         setToken(null);
         localStorage.removeItem('supabase_token');
-        console.log('Auth state changed - User logged out');
       }
       setLoading(false);
     });
@@ -76,18 +65,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (accessToken) => {
-    console.log('Login called with token:', accessToken ? 'Token provided' : 'No token');
     setToken(accessToken);
     if (accessToken) {
       localStorage.setItem('supabase_token', accessToken);
-      console.log('Token stored in localStorage');
     }
     supabase.auth.getUser().then(({ data: { user }, error }) => {
-      if (error) {
-        console.error('Error getting user:', error);
-      } else {
+      if (!error) {
         setUser(user);
-        console.log('User set:', user?.email);
       }
     });
   };
@@ -96,7 +80,7 @@ export function AuthProvider({ children }) {
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      console.error('Error signing out:', err);
+      // Error handled silently
     }
     setUser(null);
     setToken(null);

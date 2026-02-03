@@ -138,7 +138,7 @@ def _fetch_rules_cache(supabase: Client) -> dict:
                     'deal_percent': float(rule['deal_percent'])
                 })
     except Exception as e:
-        print(f"Warning: Could not fetch deal_percent rules: {e}")
+        pass
     
     # Fetch default deal_percent from agents table
     try:
@@ -149,7 +149,7 @@ def _fetch_rules_cache(supabase: Client) -> dict:
                 default_key = f"default_{agent_id}"
                 cache[default_key] = float(agent['deal_percent'])
     except Exception as e:
-        print(f"Warning: Could not fetch agent defaults: {e}")
+        pass
     
     return cache
 

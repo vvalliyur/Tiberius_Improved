@@ -44,7 +44,7 @@ function History() {
       setPlayers(playersResponse.data || []);
       setAgents(agentsResponse.data || []);
     } catch (err) {
-      console.error('Failed to fetch players or agents:', err);
+      // Error handled silently
     } finally {
       setIsLoadingPlayers(false);
     }

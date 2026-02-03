@@ -122,7 +122,6 @@ export const signUpWithEmailOrUsername = async (identifier, password, username =
         }
       } catch (err) {
         // Username mapping creation failed, but signup succeeded
-        console.warn('Failed to create username mapping:', err);
       }
     }
 

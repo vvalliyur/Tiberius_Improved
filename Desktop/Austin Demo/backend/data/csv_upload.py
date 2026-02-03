@@ -33,7 +33,7 @@ def mark_csv_as_uploaded(supabase: Client, csv_hash: str, filename: str, row_cou
             'uploaded_at': datetime.now().isoformat()
         }).execute()
     except Exception as e:
-        print(f"Warning: Could not mark CSV as uploaded: {e}")
+        pass
 
 
 def upload_csv_to_games(

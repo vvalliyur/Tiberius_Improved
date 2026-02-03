@@ -27,7 +27,7 @@ def get_last_run_time(supabase: Client, state_table: str = DEFAULT_STATE_TABLE) 
             if last_run_str:
                 return datetime.fromisoformat(last_run_str.replace('Z', '+00:00'))
     except Exception as e:
-        print(f"Warning: Could not retrieve last run time: {e}")
+        pass
     return None
 
 
@@ -49,7 +49,7 @@ def update_last_run_time(supabase: Client, run_time: datetime, state_table: str 
                 'updated_at': run_time_iso
             }).execute()
     except Exception as e:
-        print(f"Warning: Could not update last run time: {e}")
+        pass
 
 
 def connect_imap(user_email: str, app_password: str) -> imaplib.IMAP4_SSL:
@@ -85,7 +85,6 @@ def search_emails_with_csv_attachments(
     status, message_ids = mail.search(None, *search_criteria)
     
     if status != 'OK' or not message_ids or not message_ids[0]:
-        print(f"Error searching emails: {status}")
         return []
     
     return [uid.decode() if isinstance(uid, bytes) else uid for uid in message_ids[0].split()]
@@ -150,7 +149,6 @@ def validate_csv_columns(csv_path: Path) -> bool:
         required_columns = ['Rank', 'Player', 'ID', 'Profit', 'Tips', 'BuyIn']
         missing_required = [col for col in required_columns if col not in df.columns]
         if missing_required:
-            print(f"Missing required columns: {missing_required}")
             return False
         
         # Check first-row-only columns (these can be in the CSV or will be filled from first row)
@@ -164,12 +162,10 @@ def validate_csv_columns(csv_path: Path) -> bool:
         matching_columns = game_data_map_keys.intersection(csv_columns)
         
         if len(matching_columns) < len(required_columns):
-            print(f"Not enough matching columns. Found: {matching_columns}, Required: {required_columns}")
             return False
         
         return True
     except Exception as e:
-        print(f"Error validating CSV columns: {e}")
         return False
 
 
@@ -265,16 +261,9 @@ def run_email_ingestor(
     mail = None
     try:
         last_run = get_last_run_time(supabase, state_table)
-        if last_run:
-            print(f"Last run: {last_run.isoformat()}")
-        else:
-            print("No previous run found, processing all emails")
-        
         mail = connect_imap(user_email, app_password)
-        print("Connected to Gmail IMAP")
         
         email_uids = search_emails_with_csv_attachments(mail, last_run)
-        print(f"Found {len(email_uids)} emails to check")
         
         for uid in email_uids:
             try:
@@ -298,12 +287,10 @@ def run_email_ingestor(
         update_last_run_time(supabase, end_time, state_table)
         summary['end_time'] = end_time.isoformat()
         summary['duration_seconds'] = (end_time - start_time).total_seconds()
-        print(f"Processed {summary['emails_processed']} emails, uploaded {summary['attachments_uploaded']} CSVs")
         
     except Exception as e:
         summary['success'] = False
         summary['error'] = str(e)
-        print(f"Error running email ingestor: {e}")
     finally:
         if mail:
             try:
@@ -332,7 +319,7 @@ if __name__ == '__main__':
     GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD', '')
 
     if not SUPABASE_URL or not SUPABASE_KEY or not GMAIL_USER_EMAIL or not GMAIL_APP_PASSWORD:
-        print("Error: Missing required environment variables:")
+        pass
         
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     
@@ -344,4 +331,4 @@ if __name__ == '__main__':
     )
     
     import json
-    print(json.dumps(result, indent=2))
+    # Result returned silently

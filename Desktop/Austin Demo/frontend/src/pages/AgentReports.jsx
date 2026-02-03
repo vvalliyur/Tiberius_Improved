@@ -19,6 +19,8 @@ function AgentReports() {
   const [expandedAgents, setExpandedAgents] = useState(new Set());
   const [copiedAgentId, setCopiedAgentId] = useState(null);
   const [aggregatedSearch, setAggregatedSearch] = useState('');
+  const [groupBy, setGroupBy] = useState('player_id'); // 'player_id' or 'real_name'
+  const [detailedDataByRealName, setDetailedDataByRealName] = useState([]);
 
   const aggregatedColumns = [
     { 
@@ -61,55 +63,86 @@ function AgentReports() {
     setIsLoading(true);
     setError(null);
     try {
-      // lookbackDays always null - commented out feature
-      const response = await getAgentReports(startDate || null, endDate || null, null);
-      setAggregatedData(response.aggregated?.data || []);
-      setDetailedData(response.detailed?.data || []);
+      // Fetch both views in parallel
+      const [responseByPlayerId, responseByRealName] = await Promise.all([
+        getAgentReports(startDate || null, endDate || null, null, 'player_id'),
+        getAgentReports(startDate || null, endDate || null, null, 'real_name')
+      ]);
+      
+      setAggregatedData(responseByPlayerId.aggregated?.data || []);
+      setDetailedData(responseByPlayerId.detailed?.data || []);
+      setDetailedDataByRealName(responseByRealName.detailed?.data || []);
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Failed to fetch agent reports');
       setAggregatedData([]);
       setDetailedData([]);
+      setDetailedDataByRealName([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const groupedByAgent = detailedData.reduce((acc, row) => {
-    const agentId = row.agent_id;
-    if (!acc[agentId]) {
-      acc[agentId] = {
-        agent_id: row.agent_id,
-        agent_name: row.agent_name,
-        deal_percent: row.deal_percent,
-        players: [],
-        total_hands: 0,
-        total_tips: 0,
-        total_agent_tips: 0,
-      };
-    }
-    acc[agentId].players.push({
-      player_id: row.player_id,
-      player_name: row.player_name,
-      deal_percent: parseFloat(row.deal_percent || 0),
-      total_hands: row.total_hands,
-      total_tips: parseFloat(row.total_tips || 0),
-      agent_tips: parseFloat(row.agent_tips || 0),
-    });
-    acc[agentId].total_hands += parseInt(row.total_hands || 0);
-    acc[agentId].total_tips += parseFloat(row.total_tips || 0);
-    acc[agentId].total_agent_tips += parseFloat(row.agent_tips || 0);
-    return acc;
-  }, {});
+  const processDetailedData = (data) => {
+    return data.reduce((acc, row) => {
+      const agentId = row.agent_id;
+      if (!acc[agentId]) {
+        acc[agentId] = {
+          agent_id: row.agent_id,
+          agent_name: row.agent_name,
+          deal_percent: row.deal_percent,
+          players: [],
+          total_hands: 0,
+          total_tips: 0,
+          total_agent_tips: 0,
+        };
+      }
+      
+      // Handle both player_id grouping and real_name grouping
+      if (row.real_name) {
+        // Grouped by real_name
+        acc[agentId].players.push({
+          identifier: row.real_name,
+          player_ids: row.player_ids || '',
+          player_name: row.real_name,
+          deal_percent: parseFloat(row.deal_percent || 0),
+          total_hands: row.total_hands,
+          total_tips: parseFloat(row.total_tips || 0),
+          agent_tips: parseFloat(row.agent_tips || 0),
+          isRealName: true,
+        });
+      } else {
+        // Grouped by player_id
+        acc[agentId].players.push({
+          identifier: row.player_id,
+          player_id: row.player_id,
+          player_name: row.player_name,
+          deal_percent: parseFloat(row.deal_percent || 0),
+          total_hands: row.total_hands,
+          total_tips: parseFloat(row.total_tips || 0),
+          agent_tips: parseFloat(row.agent_tips || 0),
+          isRealName: false,
+        });
+      }
+      
+      acc[agentId].total_hands += parseInt(row.total_hands || 0);
+      acc[agentId].total_tips += parseFloat(row.total_tips || 0);
+      acc[agentId].total_agent_tips += parseFloat(row.agent_tips || 0);
+      return acc;
+    }, {});
+  };
 
+  const currentDetailedData = groupBy === 'real_name' ? detailedDataByRealName : detailedData;
+  const groupedByAgent = processDetailedData(currentDetailedData);
   const agents = Object.values(groupedByAgent);
 
   // Initialize all agents as expanded when data loads
   useEffect(() => {
-    if (detailedData.length > 0) {
-      const agentIds = [...new Set(detailedData.map(row => row.agent_id))];
+    const dataToUse = groupBy === 'real_name' ? detailedDataByRealName : detailedData;
+    if (dataToUse.length > 0) {
+      const agentIds = [...new Set(dataToUse.map(row => row.agent_id))];
       setExpandedAgents(new Set(agentIds));
     }
-  }, [detailedData.length]); // Re-run when detailed data changes
+  }, [detailedData.length, detailedDataByRealName.length, groupBy]); // Re-run when data or groupBy changes
 
   const toggleTable = (agentId) => {
     setExpandedAgents(prev => {
@@ -138,7 +171,7 @@ function AgentReports() {
       setCopiedAgentId(agent.agent_id);
       setTimeout(() => setCopiedAgentId(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      // Error handled silently
     }
   };
 
@@ -186,13 +219,69 @@ function AgentReports() {
               onGlobalFilterChange={setAggregatedSearch}
               hideSearch={true}
             />
+            {/* Totals Row */}
+            {aggregatedData.length > 0 && (() => {
+              const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
+              const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
+              
+              return (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="rounded-lg border overflow-hidden">
+                    <table className="w-full">
+                      <tbody>
+                        <tr className="border-b-0 bg-muted/30 font-semibold">
+                          <td className="p-4 text-center">Total:</td>
+                          <td className="p-4 text-center">
+                            <span className={totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}>
+                              {totalProfit.toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            {totalTips.toFixed(2)}
+                          </td>
+                          <td className="p-4 text-center">
+                            {/* Empty cell for Agent Tips column alignment */}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
 
       {agents.length > 0 && (
         <div className="detailed-agent-report-section mt-8">
-          <h2 className="text-2xl font-semibold mb-4">Detailed Report</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Detailed Report</h2>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setGroupBy('player_id')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  groupBy === 'player_id'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                By Player ID
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupBy('real_name')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  groupBy === 'real_name'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                By Real Name
+              </button>
+            </div>
+          </div>
           <div className="agents-container">
             {agents.map((agent) => {
               const isExpanded = expandedAgents.has(agent.agent_id);
@@ -249,8 +338,17 @@ function AgentReports() {
                       {isExpanded && (
                         <thead>
                           <tr>
-                            <th>Player ID</th>
-                            <th>Player Name</th>
+                            {groupBy === 'real_name' ? (
+                              <>
+                                <th>Real Name</th>
+                                <th>Player IDs</th>
+                              </>
+                            ) : (
+                              <>
+                                <th>Player ID</th>
+                                <th>Player Name</th>
+                              </>
+                            )}
                             <th>Deal %</th>
                             <th>Total Hands</th>
                             <th className="tips-header">Total Tips</th>
@@ -261,9 +359,18 @@ function AgentReports() {
                       {isExpanded ? (
                         <tbody>
                           {agent.players.map((player) => (
-                            <tr key={player.player_id}>
-                              <td>{player.player_id}</td>
-                              <td>{player.player_name}</td>
+                            <tr key={player.identifier}>
+                              {groupBy === 'real_name' ? (
+                                <>
+                                  <td>{player.player_name}</td>
+                                  <td>{player.player_ids || player.identifier}</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{player.player_id}</td>
+                                  <td>{player.player_name}</td>
+                                </>
+                              )}
                               <td>{(player.deal_percent * 100).toFixed(2)}%</td>
                               <td>{player.total_hands.toLocaleString()}</td>
                               <td className="tips-cell">{player.total_tips.toFixed(2)}</td>

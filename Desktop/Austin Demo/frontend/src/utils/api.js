@@ -13,22 +13,10 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('supabase_token');
-  console.log('API Request Interceptor');
-  console.log('  URL:', config.url);
-  console.log('  Method:', config.method);
-  console.log('  Token in localStorage:', token ? `${token.substring(0, 30)}...` : 'MISSING');
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('  Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
-  } else {
-    console.error('  ❌ No auth token found in localStorage. Request will fail with 401.');
   }
-  
-  console.log('  Request headers:', {
-    ...config.headers,
-    Authorization: config.headers.Authorization ? `${config.headers.Authorization.substring(0, 30)}...` : 'NOT SET'
-  });
   
   return config;
 });
@@ -40,15 +28,12 @@ api.interceptors.response.use(
     // Handle network errors (backend not running)
     if (!error.response && error.message) {
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.code === 'ERR_NETWORK') {
-        console.error('Network error - Backend may not be running:', error.message);
         error.userMessage = 'Cannot connect to server. Please make sure the backend is running on http://localhost:8000';
       }
     }
     
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.error('401 Unauthorized:', error.response?.data);
-      console.error('Token in localStorage:', localStorage.getItem('supabase_token') ? 'Exists' : 'Missing');
       localStorage.removeItem('supabase_token');
       error.userMessage = 'Session expired. Please log in again.';
       // Don't reload immediately - let user see the error
@@ -98,21 +83,28 @@ export const getAgentReport = async (startDate, endDate, lookbackDays = null) =>
   return response.data;
 };
 
-export const getDetailedAgentReport = async (startDate, endDate, lookbackDays = null) => {
+export const getDetailedAgentReport = async (startDate, endDate, lookbackDays = null, groupBy = 'player_id') => {
   const params = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (lookbackDays) params.lookback_days = lookbackDays;
+  params.group_by = groupBy;
   const response = await api.get('/get_detailed_agent_report', { params });
   return response.data;
 };
 
-export const getAgentReports = async (startDate, endDate, lookbackDays = null) => {
+export const getAgentReports = async (startDate, endDate, lookbackDays = null, groupBy = 'player_id') => {
   const params = {};
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
   if (lookbackDays) params.lookback_days = lookbackDays;
+  params.group_by = groupBy;
   const response = await api.get('/get_agent_reports', { params });
+  return response.data;
+};
+
+export const getDataErrors = async () => {
+  const response = await api.get('/get_data_errors');
   return response.data;
 };
 

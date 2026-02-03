@@ -72,7 +72,7 @@ function Players() {
       const response = await getAgents();
       setAgents(response.data || []);
     } catch (err) {
-      console.error('Failed to fetch agents:', err);
+      // Error handled silently
     }
   };
 

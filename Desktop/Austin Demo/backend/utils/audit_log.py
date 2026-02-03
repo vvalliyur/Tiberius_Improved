@@ -23,5 +23,5 @@ def log_operation(
         
         supabase.table(TABLE_AUDIT_LOGS).insert(log_entry).execute()
     except Exception as e:
-        print(f'Failed to log operation: {str(e)}')
+        pass
 

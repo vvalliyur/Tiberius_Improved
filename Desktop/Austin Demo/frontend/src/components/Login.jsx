@@ -49,7 +49,7 @@ export default function Login({ onLogin }) {
                 body: JSON.stringify({ username }),
               });
             } catch (err) {
-              console.warn('Failed to create username mapping:', err);
+              // Error handled silently
             }
           }
           onLogin(data.session.access_token);

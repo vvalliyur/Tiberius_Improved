@@ -13,6 +13,8 @@ function DetailedAgentReport() {
   const [error, setError] = useState(null);
   const [expandedAgents, setExpandedAgents] = useState(new Set());
   const [copiedAgentId, setCopiedAgentId] = useState(null);
+  const [groupBy, setGroupBy] = useState('player_id'); // 'player_id' or 'real_name'
+  const [reportDataByRealName, setReportDataByRealName] = useState([]);
 
   const handleFetch = async () => {
     if (!startDate || !endDate) {
@@ -23,42 +25,49 @@ function DetailedAgentReport() {
     setIsLoading(true);
     setError(null);
     setReportData([]); // Clear previous data
+    setReportDataByRealName([]);
     try {
-      // lookbackDays always null - commented out feature
-      const response = await getDetailedAgentReport(startDate || null, endDate || null, null);
-      console.log('Detailed agent report response:', response);
+      // Fetch both views in parallel
+      const [responseByPlayerId, responseByRealName] = await Promise.all([
+        getDetailedAgentReport(startDate || null, endDate || null, null, 'player_id'),
+        getDetailedAgentReport(startDate || null, endDate || null, null, 'real_name')
+      ]);
       
       // Handle both response.data (if it's already the data) or response (if it's the full response object)
-      let data = [];
-      if (Array.isArray(response)) {
-        data = response;
-      } else if (response && typeof response === 'object') {
-        data = response.data || [];
+      let dataByPlayerId = [];
+      if (Array.isArray(responseByPlayerId)) {
+        dataByPlayerId = responseByPlayerId;
+      } else if (responseByPlayerId && typeof responseByPlayerId === 'object') {
+        dataByPlayerId = responseByPlayerId.data || [];
       }
       
-      console.log('Processed data:', data);
-      setReportData(data);
+      let dataByRealName = [];
+      if (Array.isArray(responseByRealName)) {
+        dataByRealName = responseByRealName;
+      } else if (responseByRealName && typeof responseByRealName === 'object') {
+        dataByRealName = responseByRealName.data || [];
+      }
+      
+      setReportData(dataByPlayerId);
+      setReportDataByRealName(dataByRealName);
     } catch (err) {
-      console.error('Error fetching detailed agent report:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response,
-        stack: err.stack
-      });
       setError(err.response?.data?.detail || err.message || 'Failed to fetch detailed agent report');
       setReportData([]);
+      setReportDataByRealName([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const currentReportData = groupBy === 'real_name' ? reportDataByRealName : reportData;
+
   const groupedByAgent = useMemo(() => {
     try {
-      if (!Array.isArray(reportData) || reportData.length === 0) {
+      if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
         return {};
       }
       
-      return reportData.reduce((acc, row) => {
+      return currentReportData.reduce((acc, row) => {
         try {
           if (!row || row.agent_id === null || row.agent_id === undefined) {
             return acc;
@@ -81,42 +90,60 @@ function DetailedAgentReport() {
           const totalTips = parseFloat(row.total_tips || 0) || 0;
           const agentTips = parseFloat(row.agent_tips || 0) || 0;
           
-          acc[agentId].players.push({
-            player_id: row.player_id || '',
-            player_name: row.player_name || '',
-            deal_percent: parseFloat(row.deal_percent || 0),
-            total_hands: totalHands,
-            total_tips: totalTips,
-            agent_tips: agentTips,
-          });
+          // Handle both player_id grouping and real_name grouping
+          if (row.real_name) {
+            // Grouped by real_name
+            acc[agentId].players.push({
+              identifier: row.real_name,
+              player_ids: row.player_ids || '',
+              player_name: row.real_name,
+              deal_percent: parseFloat(row.deal_percent || 0),
+              total_hands: totalHands,
+              total_tips: totalTips,
+              agent_tips: agentTips,
+              isRealName: true,
+            });
+          } else {
+            // Grouped by player_id
+            acc[agentId].players.push({
+              identifier: row.player_id || '',
+              player_id: row.player_id || '',
+              player_name: row.player_name || '',
+              deal_percent: parseFloat(row.deal_percent || 0),
+              total_hands: totalHands,
+              total_tips: totalTips,
+              agent_tips: agentTips,
+              isRealName: false,
+            });
+          }
           
           acc[agentId].total_hands += totalHands;
           acc[agentId].total_tips += totalTips;
           acc[agentId].total_agent_tips += agentTips;
         } catch (rowErr) {
-          console.error('Error processing row:', rowErr, row);
+          // Error handled silently
         }
         return acc;
       }, {});
     } catch (err) {
-      console.error('Error grouping agent data:', err, reportData);
       return {};
     }
-  }, [reportData]);
+  }, [currentReportData]);
 
   const agents = Object.values(groupedByAgent);
 
   // Initialize all agents as expanded when data loads
   useEffect(() => {
-    if (reportData.length > 0) {
+    const dataToUse = groupBy === 'real_name' ? reportDataByRealName : reportData;
+    if (dataToUse.length > 0) {
       try {
-        const agentIds = [...new Set(reportData.map(row => row?.agent_id).filter(Boolean))];
+        const agentIds = [...new Set(dataToUse.map(row => row?.agent_id).filter(Boolean))];
         setExpandedAgents(new Set(agentIds));
       } catch (err) {
-        console.error('Error initializing expanded agents:', err);
+        // Error handled silently
       }
     }
-  }, [reportData]); // Re-run when report data changes
+  }, [reportData, reportDataByRealName, groupBy]); // Re-run when report data or groupBy changes
 
   const toggleTable = (agentId) => {
     setExpandedAgents(prev => {
@@ -133,7 +160,6 @@ function DetailedAgentReport() {
   const copyTableToClipboard = async (agent) => {
     try {
       if (!agent || !Array.isArray(agent.players)) {
-        console.error('Invalid agent data for copy:', agent);
         return;
       }
       
@@ -143,7 +169,11 @@ function DetailedAgentReport() {
         const dealPercent = typeof player.deal_percent === 'number' ? player.deal_percent : 0;
         const totalTips = typeof player.total_tips === 'number' ? player.total_tips : 0;
         const agentTips = typeof player.agent_tips === 'number' ? player.agent_tips : 0;
-        return `${player.player_id || ''}, ${player.player_name || ''}, ${(dealPercent * 100).toFixed(2)}%, ${totalTips.toFixed(2)}, ${agentTips.toFixed(2)}`;
+        if (groupBy === 'real_name') {
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${(dealPercent * 100).toFixed(2)}%, ${totalTips.toFixed(2)}, ${agentTips.toFixed(2)}`;
+        } else {
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${(dealPercent * 100).toFixed(2)}%, ${totalTips.toFixed(2)}, ${agentTips.toFixed(2)}`;
+        }
       }).filter(Boolean);
       
       const totalTips = typeof agent.total_tips === 'number' ? agent.total_tips : 0;
@@ -156,14 +186,40 @@ function DetailedAgentReport() {
       setCopiedAgentId(agent.agent_id);
       setTimeout(() => setCopiedAgentId(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      // Error handled silently
     }
   };
 
   return (
     <div className="detailed-agent-report-page">
       <div className="page-header">
-        <h1>Detailed Agent Report</h1>
+        <div className="flex items-center justify-between">
+          <h1>Detailed Agent Report</h1>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setGroupBy('player_id')}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${
+                groupBy === 'player_id'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              By Player ID
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupBy('real_name')}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${
+                groupBy === 'real_name'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              By Real Name
+            </button>
+          </div>
+        </div>
       </div>
 
       <DateRangeFilter
@@ -283,8 +339,17 @@ function DetailedAgentReport() {
                     {isExpanded && (
                       <thead>
                         <tr>
-                          <th>Player ID</th>
-                          <th>Player Name</th>
+                          {groupBy === 'real_name' ? (
+                            <>
+                              <th>Real Name</th>
+                              <th>Player IDs</th>
+                            </>
+                          ) : (
+                            <>
+                              <th>Player ID</th>
+                              <th>Player Name</th>
+                            </>
+                          )}
                           <th>Deal %</th>
                           <th>Total Hands</th>
                           <th className="tips-header">Total Tips</th>
@@ -300,9 +365,18 @@ function DetailedAgentReport() {
                           const totalTips = typeof player.total_tips === 'number' ? player.total_tips : 0;
                           const agentTips = typeof player.agent_tips === 'number' ? player.agent_tips : 0;
                           return (
-                            <tr key={player.player_id || Math.random()}>
-                              <td>{player.player_id || ''}</td>
-                              <td>{player.player_name || ''}</td>
+                            <tr key={player.identifier || Math.random()}>
+                              {groupBy === 'real_name' ? (
+                                <>
+                                  <td>{player.player_name || ''}</td>
+                                  <td>{player.player_ids || player.identifier || ''}</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{player.player_id || ''}</td>
+                                  <td>{player.player_name || ''}</td>
+                                </>
+                              )}
                               <td>{(dealPercent * 100).toFixed(2)}%</td>
                               <td>{typeof player.total_hands === 'number' ? player.total_hands.toLocaleString() : (player.total_hands || 0)}</td>
                               <td className="tips-cell">{totalTips.toFixed(2)}</td>
@@ -322,7 +396,6 @@ function DetailedAgentReport() {
               </div>
               );
             } catch (agentErr) {
-              console.error('Error rendering agent:', agentErr, agent);
               return (
                 <div key={agent?.agent_id || `error-${Math.random()}`} className="agent-section">
                   <div className="error-message">Error rendering agent data: {agentErr.message}</div>

@@ -274,18 +274,29 @@ async def get_detailed_agent_report(
     start_date: date | None = Query(None, description="Start date for the query"),
     end_date: date | None = Query(None, description="End date for the query"),
     lookback_days: int | None = Query(None, description="Optional lookback period in days"),
+    group_by: str = Query('player_id', description="Group by 'player_id' or 'real_name'"),
     current_user: User = Depends(get_current_user),
 ):
     try:
         resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
         
-        response = supabase.rpc(
-            'get_detailed_agent_report',
-            {
-                'start_date_param': resolved_start.isoformat(),
-                'end_date_param': resolved_end.isoformat()
-            }
-        ).execute()
+        # Choose function based on group_by parameter
+        if group_by == 'real_name':
+            response = supabase.rpc(
+                'get_detailed_agent_report_by_real_name',
+                {
+                    'start_date_param': resolved_start.isoformat(),
+                    'end_date_param': resolved_end.isoformat()
+                }
+            ).execute()
+        else:
+            response = supabase.rpc(
+                'get_detailed_agent_report',
+                {
+                    'start_date_param': resolved_start.isoformat(),
+                    'end_date_param': resolved_end.isoformat()
+                }
+            ).execute()
         
         return {'data': response.data, 'count': len(response.data)}
     except ValueError as e:
@@ -299,13 +310,14 @@ async def get_agent_reports(
     start_date: date | None = Query(None, description="Start date for the query"),
     end_date: date | None = Query(None, description="End date for the query"),
     lookback_days: int | None = Query(None, description="Optional lookback period in days"),
+    group_by: str = Query('player_id', description="Group by 'player_id' or 'real_name'"),
     current_user: User = Depends(get_current_user),
 ):
     """Combined endpoint that returns both aggregated and detailed agent reports in one call."""
     try:
         resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
         
-        # Get both reports in parallel
+        # Aggregated report is always the same (grouped by agent)
         aggregated_response = supabase.rpc(
             'get_agent_report',
             {
@@ -314,13 +326,24 @@ async def get_agent_reports(
             }
         ).execute()
         
-        detailed_response = supabase.rpc(
-            'get_detailed_agent_report',
-            {
-                'start_date_param': resolved_start.isoformat(),
-                'end_date_param': resolved_end.isoformat()
-            }
-        ).execute()
+        # Detailed report changes based on group_by parameter
+        if group_by == 'real_name':
+            detailed_response = supabase.rpc(
+                'get_detailed_agent_report_by_real_name',
+                {
+                    'start_date_param': resolved_start.isoformat(),
+                    'end_date_param': resolved_end.isoformat()
+                }
+            ).execute()
+        else:
+            # Default to player_id grouping
+            detailed_response = supabase.rpc(
+                'get_detailed_agent_report',
+                {
+                    'start_date_param': resolved_start.isoformat(),
+                    'end_date_param': resolved_end.isoformat()
+                }
+            ).execute()
         
         return {
             'aggregated': {
@@ -334,6 +357,76 @@ async def get_agent_reports(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/get_profit_tips_diagnostic')
+async def get_profit_tips_diagnostic(
+    start_date: date | None = Query(None, description="Start date for the query"),
+    end_date: date | None = Query(None, description="End date for the query"),
+    lookback_days: int | None = Query(None, description="Optional lookback period in days"),
+    current_user: User = Depends(get_current_user),
+):
+    """Diagnostic endpoint to identify discrepancies between profit and tips."""
+    try:
+        resolved_start, resolved_end = resolve_date_range(lookback_days, start_date, end_date)
+        
+        totals_response = supabase.rpc(
+            'get_profit_tips_totals',
+            {
+                'start_date_param': resolved_start.isoformat(),
+                'end_date_param': resolved_end.isoformat()
+            }
+        ).execute()
+        
+        mismatch_response = supabase.rpc(
+            'get_profit_tips_mismatch',
+            {
+                'start_date_param': resolved_start.isoformat(),
+                'end_date_param': resolved_end.isoformat()
+            }
+        ).execute()
+        
+        return {
+            'totals': totals_response.data or [],
+            'mismatches': mismatch_response.data or []
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/get_data_errors')
+async def get_data_errors(
+    current_user: User = Depends(get_current_user),
+):
+    """Get all data quality errors:
+    1. Player IDs in games table that are not in players table
+    2. Players in players table that are not mapped to agents
+    3. Agents that are not mapped to deal rules
+    """
+    try:
+        # Get all error types
+        players_in_games_not_in_players_response = supabase.rpc('get_players_in_games_not_in_players', {}).execute()
+        players_not_mapped_to_agents_response = supabase.rpc('get_players_not_mapped_to_agents', {}).execute()
+        agents_not_mapped_to_deal_rules_response = supabase.rpc('get_agents_not_mapped_to_deal_rules', {}).execute()
+        
+        return {
+            'players_in_games_not_in_players': {
+                'data': players_in_games_not_in_players_response.data or [],
+                'count': len(players_in_games_not_in_players_response.data or [])
+            },
+            'players_not_mapped_to_agents': {
+                'data': players_not_mapped_to_agents_response.data or [],
+                'count': len(players_not_mapped_to_agents_response.data or [])
+            },
+            'agents_not_mapped_to_deal_rules': {
+                'data': agents_not_mapped_to_deal_rules_response.data or [],
+                'count': len(agents_not_mapped_to_deal_rules_response.data or [])
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

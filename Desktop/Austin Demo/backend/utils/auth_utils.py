@@ -55,12 +55,10 @@ def create_get_current_user(security: HTTPBearer, supabase_url: str, supabase_ke
                                 options={"verify_exp": True}
                             )
                         except ValueError as e:
-                            # If JWKS fetch fails (e.g., DNS error), log and fall back to unverified decode
-                            print(f"Warning: Failed to fetch JWKS, using unverified token decode: {str(e)}")
+                            # If JWKS fetch fails (e.g., DNS error), fall back to unverified decode
                             payload = jwt.decode(token, options={"verify_signature": False})
                         except Exception as e:
                             # For other errors, also fall back to unverified decode
-                            print(f"Warning: JWKS verification failed, using unverified token decode: {str(e)}")
                             payload = jwt.decode(token, options={"verify_signature": False})
                     else:
                         payload = jwt.decode(token, options={"verify_signature": False})
