@@ -4,6 +4,8 @@ import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { formatNumber } from '../utils/numberFormat';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -20,6 +22,12 @@ function Dashboard() {
   const [agentReportSearch, setAgentReportSearch] = useState('');
   const [playerAggregatesSearch, setPlayerAggregatesSearch] = useState('');
   const [error, setError] = useState(null);
+  const [expandedTables, setExpandedTables] = useState({
+    blockedPlayers: true,
+    overCreditLimit: true,
+    agentReport: true,
+    playerAggregates: true
+  });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -93,6 +101,13 @@ function Dashboard() {
     { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
+  const toggleTable = (tableKey) => {
+    setExpandedTables(prev => ({
+      ...prev,
+      [tableKey]: !prev[tableKey]
+    }));
+  };
+
 
   return (
     <div className="w-full space-y-4" data-page-container style={{ minHeight: '1000px' }}>
@@ -135,20 +150,36 @@ function Dashboard() {
         <Card className="overflow-hidden flex-shrink-0 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
           <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
             <CardTitle className="text-red-700 dark:text-red-300">Blocked Players (Do Not Allow)</CardTitle>
-            <TableSearchBox
-              value={blockedPlayersSearch}
-              onChange={setBlockedPlayersSearch}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleTable('blockedPlayers')}
+                className="h-8 w-8 p-0"
+              >
+                {expandedTables.blockedPlayers ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              <TableSearchBox
+                value={blockedPlayersSearch}
+                onChange={setBlockedPlayersSearch}
+              />
+            </div>
           </CardHeader>
-          <DataTable
-            data={dashboardData.blocked_players || []}
-            columns={blockedPlayersColumns}
-            isLoading={isLoading}
-            emptyMessage="No blocked players"
-            globalFilter={blockedPlayersSearch}
-            onGlobalFilterChange={setBlockedPlayersSearch}
-            hideSearch={true}
-          />
+          {expandedTables.blockedPlayers && (
+            <DataTable
+              data={dashboardData.blocked_players || []}
+              columns={blockedPlayersColumns}
+              isLoading={isLoading}
+              emptyMessage="No blocked players"
+              globalFilter={blockedPlayersSearch}
+              onGlobalFilterChange={setBlockedPlayersSearch}
+              hideSearch={true}
+            />
+          )}
         </Card>
       )}
 
@@ -156,59 +187,107 @@ function Dashboard() {
         <Card className="overflow-hidden flex-shrink-0">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
             <CardTitle>Players Over Credit Limit</CardTitle>
-            <TableSearchBox
-              value={overCreditLimitSearch}
-              onChange={setOverCreditLimitSearch}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleTable('overCreditLimit')}
+                className="h-8 w-8 p-0"
+              >
+                {expandedTables.overCreditLimit ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              <TableSearchBox
+                value={overCreditLimitSearch}
+                onChange={setOverCreditLimitSearch}
+              />
+            </div>
           </CardHeader>
-          <DataTable
-            data={dashboardData.over_credit_limit_players}
-            columns={overCreditLimitColumns}
-            isLoading={isLoading}
-            emptyMessage="No players over credit limit"
-            globalFilter={overCreditLimitSearch}
-            onGlobalFilterChange={setOverCreditLimitSearch}
-            hideSearch={true}
-          />
+          {expandedTables.overCreditLimit && (
+            <DataTable
+              data={dashboardData.over_credit_limit_players}
+              columns={overCreditLimitColumns}
+              isLoading={isLoading}
+              emptyMessage="No players over credit limit"
+              globalFilter={overCreditLimitSearch}
+              onGlobalFilterChange={setOverCreditLimitSearch}
+              hideSearch={true}
+            />
+          )}
         </Card>
       )}
 
       <Card className="overflow-hidden flex-shrink-0">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-          <CardTitle>Agent Report</CardTitle>
-          <TableSearchBox
-            value={agentReportSearch}
-            onChange={setAgentReportSearch}
+          <CardTitle>Player Aggregates</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleTable('playerAggregates')}
+              className="h-8 w-8 p-0"
+            >
+              {expandedTables.playerAggregates ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            <TableSearchBox
+              value={playerAggregatesSearch}
+              onChange={setPlayerAggregatesSearch}
+            />
+          </div>
+        </CardHeader>
+        {expandedTables.playerAggregates && (
+          <DataTable
+            data={dashboardData.player_aggregates}
+            columns={playerColumns}
+            isLoading={isLoading}
+            emptyMessage="No player data available"
+            globalFilter={playerAggregatesSearch}
+            onGlobalFilterChange={setPlayerAggregatesSearch}
+            hideSearch={true}
           />
-          </CardHeader>
-        <DataTable
-          data={dashboardData.agent_report}
-          columns={agentColumns}
-          isLoading={isLoading}
-          emptyMessage="No agent data available"
-          globalFilter={agentReportSearch}
-          onGlobalFilterChange={setAgentReportSearch}
-          hideSearch={true}
-        />
+        )}
       </Card>
 
       <Card className="overflow-hidden flex-shrink-0">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
-          <CardTitle>Player Aggregates</CardTitle>
-          <TableSearchBox
-            value={playerAggregatesSearch}
-            onChange={setPlayerAggregatesSearch}
+          <CardTitle>Agent Report</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleTable('agentReport')}
+              className="h-8 w-8 p-0"
+            >
+              {expandedTables.agentReport ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            <TableSearchBox
+              value={agentReportSearch}
+              onChange={setAgentReportSearch}
+            />
+          </div>
+        </CardHeader>
+        {expandedTables.agentReport && (
+          <DataTable
+            data={dashboardData.agent_report}
+            columns={agentColumns}
+            isLoading={isLoading}
+            emptyMessage="No agent data available"
+            globalFilter={agentReportSearch}
+            onGlobalFilterChange={setAgentReportSearch}
+            hideSearch={true}
           />
-          </CardHeader>
-        <DataTable
-          data={dashboardData.player_aggregates}
-          columns={playerColumns}
-          isLoading={isLoading}
-          emptyMessage="No player data available"
-          globalFilter={playerAggregatesSearch}
-          onGlobalFilterChange={setPlayerAggregatesSearch}
-          hideSearch={true}
-        />
+        )}
       </Card>
     </div>
   );
