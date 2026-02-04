@@ -5,6 +5,21 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tiberius Accounting</title>
+    <style>
+      /* Critical CSS for nav bar - prevents layout shift */
+      nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 100px !important;
+        z-index: 50 !important;
+      }
+      body {
+        padding-top: 100px;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

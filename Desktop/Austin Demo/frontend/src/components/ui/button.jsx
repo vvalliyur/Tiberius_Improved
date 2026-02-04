@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils"
 
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants = {
-    default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg transition-all duration-200",
-    outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-all duration-200",
-    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md transition-all duration-200",
-    ghost: "hover:bg-accent hover:text-accent-foreground transition-all duration-200 shadow-[0_0_0_0_transparent]",
-    link: "text-primary underline-offset-4 hover:underline transition-all duration-200",
+    default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-colors duration-200",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg transition-colors duration-200",
+    outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors duration-200",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md transition-colors duration-200",
+    ghost: "hover:bg-accent hover:text-accent-foreground transition-colors duration-200 shadow-md",
+    link: "text-primary underline-offset-4 hover:underline transition-colors duration-200",
   }
   const sizes = {
     default: "h-10 px-4 py-2",

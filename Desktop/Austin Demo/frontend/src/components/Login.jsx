@@ -84,14 +84,15 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo-container" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}>
+        <div className="login-logo-container">
           <img 
             src="/logo.png" 
             alt="Tiberius Accounting" 
-            style={{ maxHeight: '120px', height: 'auto', width: 'auto' }}
+            className="login-logo"
           />
         </div>
-        <h2>{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+        <h1 className="login-title">Tiberius Accounting</h1>
+        <h2 className="login-subtitle">{isSignUp ? 'Create your account' : 'Welcome back'}</h2>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">

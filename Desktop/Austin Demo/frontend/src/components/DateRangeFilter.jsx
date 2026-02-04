@@ -31,19 +31,23 @@ export default function DateRangeFilter({
 
   const formatDisplayDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  // Format date string (YYYY-MM-DD) to MM/DD/YYYY for input display
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${month}/${day}/${year}`;
+    // Parse as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return '';
+    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}/${year}`;
   };
 
+  // Parse MM/DD/YYYY input to YYYY-MM-DD format (local timezone)
   const parseDateInput = (value) => {
     // Only parse MM/DD/YYYY format
     if (!value || value.trim() === '') return null;
@@ -52,9 +56,15 @@ export default function DateRangeFilter({
     const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (slashMatch) {
       const [, month, day, year] = slashMatch;
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+      const monthNum = parseInt(month);
+      const dayNum = parseInt(day);
+      const yearNum = parseInt(year);
+      
+      // Validate date
+      const date = new Date(yearNum, monthNum - 1, dayNum);
+      if (date.getFullYear() === yearNum && date.getMonth() === monthNum - 1 && date.getDate() === dayNum) {
+        // Format as YYYY-MM-DD using local timezone values
+        return `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
       }
     }
     
@@ -79,7 +89,12 @@ export default function DateRangeFilter({
   }, [endDate]);
 
   const handleDateSelect = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD using local timezone to avoid day shift
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
     if (openCalendar === 'start') {
       onStartDateChange(dateStr);
     } else if (openCalendar === 'end') {
@@ -156,9 +171,15 @@ export default function DateRangeFilter({
     for (let i = 0; i <= 30; i += 7) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
+      // Format date as YYYY-MM-DD using local timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       options.push({
         label: i === 0 ? 'Today' : i === 7 ? '7 days ago' : i === 14 ? '14 days ago' : i === 21 ? '21 days ago' : `${i} days ago`,
-        date: date.toISOString().split('T')[0],
+        date: dateStr,
         days: i
       });
     }
@@ -222,7 +243,14 @@ export default function DateRangeFilter({
     }, [containerRef, openCalendar]);
 
     const today = new Date();
-    const currentMonth = selectedDate ? new Date(selectedDate + 'T00:00:00') : today;
+    // Parse selectedDate as local date to avoid timezone issues
+    let currentMonth = today;
+    if (selectedDate) {
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      if (year && month && day) {
+        currentMonth = new Date(year, month - 1, day);
+      }
+    }
     const [viewMonth, setViewMonth] = useState(currentMonth.getMonth());
     const [viewYear, setViewYear] = useState(currentMonth.getFullYear());
 
@@ -279,7 +307,12 @@ export default function DateRangeFilter({
                   variant="outline"
                   size="sm"
                   className="text-xs h-8"
-                  onClick={() => handleDateSelect(new Date(option.date))}
+                  onClick={() => {
+                    // Parse date string (YYYY-MM-DD) as local date
+                    const [year, month, day] = option.date.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    handleDateSelect(date);
+                  }}
                 >
                   {option.label}
                 </Button>
@@ -313,8 +346,10 @@ export default function DateRangeFilter({
                 date.setHours(0, 0, 0, 0);
                 const todayStart = new Date(today);
                 todayStart.setHours(0, 0, 0, 0);
-                const dateStr = date.toISOString().split('T')[0];
-                const isToday = dateStr === todayStart.toISOString().split('T')[0];
+                // Format date as YYYY-MM-DD using local timezone
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const todayStr = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}`;
+                const isToday = dateStr === todayStr;
                 const isSelected = selectedDate === dateStr;
 
                 return (

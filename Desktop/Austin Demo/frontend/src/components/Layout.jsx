@@ -63,120 +63,142 @@ export default function Layout({ children, activePage, onPageChange }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <nav className="border-b bg-background fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', width: '100%', position: 'fixed', top: 0, left: 0, right: 0, willChange: 'auto' }}>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
-          <div className="flex items-center justify-between" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', containLayout: 'strict' }}>
-            <div className="flex-shrink-0">
-              <div 
-                className="cursor-pointer hover:opacity-80 transition-opacity flex items-center"
-                onClick={() => onPageChange('dashboard')}
-                style={{ height: '60px' }}
-              >
-                <img 
-                  src="/logo.png" 
-                  alt="Tiberius Accounting" 
-                  className="h-full w-auto object-contain"
-                  style={{ maxHeight: '60px', height: 'auto' }}
-                />
-              </div>
+      <nav 
+        className="nav-bar"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          height: '100px',
+          zIndex: 50,
+          backgroundColor: 'hsl(var(--background))',
+          borderBottom: '1px solid hsl(var(--border))',
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+        }}
+      >
+        <div 
+          className="nav-container"
+          style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
+            padding: '0 1rem',
+            height: '100px',
+          }}
+        >
+          <div 
+            className="nav-content"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              height: '100px',
+              gap: '2rem',
+            }}
+          >
+            <div 
+              className="nav-logo" 
+              onClick={() => onPageChange('dashboard')}
+              style={{
+                flexShrink: 0,
+                cursor: 'pointer',
+                height: '100px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <img 
+                src="/logo.png" 
+                alt="Tiberius Accounting"
+                style={{
+                  height: '100px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
             </div>
             
-            <div className="hidden md:flex flex-1 items-center justify-center gap-2" style={{ minHeight: '44px', height: '44px' }}>
-              <Button
-                variant={activePage === 'dashboard' ? 'default' : 'ghost'}
-                size="lg"
+            <div 
+              className="nav-links"
+              style={{
+                alignItems: 'center',
+                gap: '0.5rem',
+                flex: 1,
+                justifyContent: 'center',
+              }}
+            >
+              <button
+                className={`nav-link ${activePage === 'dashboard' ? 'active' : ''}`}
                 onClick={() => onPageChange('dashboard')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Dashboard
-              </Button>
-              
-              <Button
-                variant={activePage === 'reporting' ? 'default' : 'ghost'}
-                size="lg"
+              </button>
+              <button
+                className={`nav-link ${activePage === 'reporting' ? 'active' : ''}`}
                 onClick={() => onPageChange('reporting')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Reporting
-              </Button>
-              
-              <Button
-                variant={activePage === 'history' ? 'default' : 'ghost'}
-                size="lg"
+              </button>
+              <button
+                className={`nav-link ${activePage === 'history' ? 'active' : ''}`}
                 onClick={() => onPageChange('history')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 History
-              </Button>
-              
-              <Button
-                variant={activePage === 'management' ? 'default' : 'ghost'}
-                size="lg"
+              </button>
+              <button
+                className={`nav-link ${activePage === 'management' ? 'active' : ''}`}
                 onClick={() => onPageChange('management')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Management
-              </Button>
-              
-              <Button
-                variant={activePage === 'check' ? 'default' : 'ghost'}
-                size="lg"
+              </button>
+              <button
+                className={`nav-link ${activePage === 'check' ? 'active' : ''}`}
                 onClick={() => onPageChange('check')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Check
-              </Button>
-              
-              <Button
-                variant={activePage === 'raw-data' ? 'default' : 'ghost'}
-                size="lg"
+              </button>
+              <button
+                className={`nav-link ${activePage === 'raw-data' ? 'active' : ''}`}
                 onClick={() => onPageChange('raw-data')}
-                className="text-base px-6 py-3 rounded-full transition-colors duration-200"
-                style={{ minWidth: '120px', width: '120px', height: '44px', maxWidth: '120px', maxHeight: '44px', minHeight: '44px', boxSizing: 'border-box' }}
               >
                 Raw Data
-              </Button>
+              </button>
             </div>
 
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
+            <div 
+              className="nav-actions"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                flexShrink: 0,
+              }}
+            >
+              <button
+                className="nav-action-icon"
                 onClick={toggleTheme}
-                className="h-10 w-10 rounded-full hover:bg-accent transition-colors"
+                aria-label="Toggle theme"
               >
-                {theme === 'light' ? (
-                  <Moon className="h-5 w-5" />
-                ) : (
-                  <Sun className="h-5 w-5" />
-                )}
-              </Button>
-              
-              <div className="relative">
-                <Button
-                  ref={userMenuButtonRef}
-                  variant="ghost"
-                  className="text-base px-4 py-2 rounded-full hover:bg-accent transition-colors"
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                >
-                  <span className="hidden sm:inline">{user?.email}</span>
-                  <span className="sm:hidden">User</span>
-                </Button>
-              </div>
+                {theme === 'light' ? <Moon className="icon" /> : <Sun className="icon" />}
+              </button>
+              <button
+                ref={userMenuButtonRef}
+                className="nav-action-user"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                aria-label="User menu"
+              >
+                <div className="user-avatar">
+                  {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                </div>
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10" style={{ paddingTop: '100px', minHeight: 'calc(100vh - 80px)', marginTop: 0 }}>
-        <div className="w-full" style={{ minHeight: 'calc(100vh - 200px)' }}>
-          {children}
-        </div>
+      <main className="main-content">
+        {children}
       </main>
 
       {isUserMenuOpen && createPortal(
