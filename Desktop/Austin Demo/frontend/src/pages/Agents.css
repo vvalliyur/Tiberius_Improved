@@ -85,6 +85,13 @@
   color: hsl(var(--foreground));
 }
 
+.form-help-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {

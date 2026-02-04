@@ -25,7 +25,8 @@ function Players() {
   const columns = [
     { accessorKey: 'player_id', header: 'Player ID' },
     { accessorKey: 'player_name', header: 'Player Name' },
-    { accessorKey: 'agent_id', header: 'Agent ID' },
+    { accessorKey: 'agent_name', header: 'Agent Name' },
+    { accessorKey: 'real_name', header: 'Real Name' },
     { accessorKey: 'credit_limit', header: 'Credit Limit' },
     { accessorKey: 'weekly_credit_adjustment', header: 'Weekly Credit Adjustment', cell: info => {
       const value = info.getValue();

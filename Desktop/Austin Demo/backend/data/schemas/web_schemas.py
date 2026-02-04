@@ -20,3 +20,15 @@ class UpsertPlayerRequest(BaseModel):
     payment_methods: str | None = None
     is_blocked: bool = False
 
+class UpsertRealNameRequest(BaseModel):
+    id: int | None = None
+    player_id: str
+    agent_id: int
+    real_name: str
+
+class UpsertDealRuleRequest(BaseModel):
+    id: int | None = None
+    agent_id: int
+    threshold: float
+    deal_percent: float
+

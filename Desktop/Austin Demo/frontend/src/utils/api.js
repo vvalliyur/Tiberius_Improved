@@ -153,5 +153,25 @@ export const sendTelegramMessage = async (agentId, message) => {
   return response.data;
 };
 
+export const getRealNames = async () => {
+  const response = await api.get('/get_real_names');
+  return response.data;
+};
+
+export const getDealRules = async () => {
+  const response = await api.get('/get_deal_rules');
+  return response.data;
+};
+
+export const upsertRealName = async (realNameData) => {
+  const response = await api.post('/real_names/upsert', realNameData);
+  return response.data;
+};
+
+export const upsertDealRule = async (dealRuleData) => {
+  const response = await api.post('/deal_rules/upsert', dealRuleData);
+  return response.data;
+};
+
 export default api;
 

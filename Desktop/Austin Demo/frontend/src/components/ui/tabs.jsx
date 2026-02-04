@@ -25,7 +25,7 @@ const Tabs = ({ defaultValue, value, onValueChange, children, className }) => {
   )
 }
 
-const TabsList = React.forwardRef(({ className, ...props }, ref) => (
+const TabsList = React.forwardRef(({ className, value, onValueChange, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -56,7 +56,7 @@ const TabsTrigger = React.forwardRef(({ className, value, ...props }, ref) => {
 })
 TabsTrigger.displayName = "TabsTrigger"
 
-const TabsContent = React.forwardRef(({ className, value, children, ...props }, ref) => {
+const TabsContent = React.forwardRef(({ className, value, onValueChange, children, ...props }, ref) => {
   const context = React.useContext(TabsContext)
   const isActive = context?.value === value
   

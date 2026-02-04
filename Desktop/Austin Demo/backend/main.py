@@ -17,7 +17,7 @@ import polars as pl
 from data.schemas.df_schemas import User, GameDataS, AgentS, PlayerS
 from utils.auth_utils import create_get_current_user
 from utils.datetime_utils import resolve_date_range, get_last_thursday_12am_texas
-from data.schemas.web_schemas import UpsertAgentRequest, UpsertPlayerRequest
+from data.schemas.web_schemas import UpsertAgentRequest, UpsertPlayerRequest, UpsertRealNameRequest, UpsertDealRuleRequest
 from data.csv_upload import upload_csv_to_games
 from utils.audit_log import log_operation
 import tempfile
@@ -231,12 +231,26 @@ async def get_players(current_user: User = Depends(get_current_user)):
         players_response = supabase.table(TABLE_PLAYERS).select('*').execute()
         agents_response = supabase.table(TABLE_AGENTS).select('agent_id, agent_name').execute()
         agents_map = {agent['agent_id']: agent['agent_name'] for agent in agents_response.data}
+        # Get real names for joining
+        real_names_response = supabase.table('real_name_mapping').select('player_id, agent_id, real_name').execute()
+        # Create a map: (player_id, agent_id) -> real_name
+        real_names_map = {}
+        for rn in real_names_response.data:
+            key = (str(rn['player_id']), rn['agent_id'])
+            real_names_map[key] = rn['real_name']
         
         players_data = []
         for player in players_response.data:
             player_dict = dict(player)
             agent_id = player.get('agent_id')
+            player_id = player.get('player_id')
             player_dict['agent_name'] = agents_map.get(agent_id) if agent_id else None
+            # Get real_name if mapping exists
+            if player_id and agent_id:
+                key = (str(player_id), agent_id)
+                player_dict['real_name'] = real_names_map.get(key)
+            else:
+                player_dict['real_name'] = None
             players_data.append(player_dict)
         
         return {'data': players_data, 'count': len(players_data)}
@@ -612,6 +626,169 @@ async def upsert_player(player_data: UpsertPlayerRequest, current_user: User = D
             )
             
             return {'data': response.data[0], 'message': 'Player created successfully'}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/get_real_names')
+async def get_real_names(current_user: User = Depends(get_current_user)):
+    try:
+        # Get real names
+        real_names_response = supabase.table('real_name_mapping').select('*').execute()
+        # Get agents for joining
+        agents_response = supabase.table(TABLE_AGENTS).select('agent_id, agent_name').execute()
+        agents_map = {agent['agent_id']: agent['agent_name'] for agent in agents_response.data}
+        # Get players for joining
+        players_response = supabase.table(TABLE_PLAYERS).select('player_id, player_name').execute()
+        players_map = {str(player['player_id']): player['player_name'] for player in players_response.data}
+        
+        # Add agent_name and player_name to each real name mapping
+        data = []
+        for row in real_names_response.data:
+            row_dict = dict(row)
+            agent_id = row_dict.get('agent_id')
+            player_id = row_dict.get('player_id')
+            row_dict['agent_name'] = agents_map.get(agent_id) if agent_id else None
+            row_dict['player_name'] = players_map.get(str(player_id)) if player_id else None
+            data.append(row_dict)
+        
+        return {'data': data, 'count': len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/get_deal_rules')
+async def get_deal_rules(current_user: User = Depends(get_current_user)):
+    try:
+        # Get deal rules
+        rules_response = supabase.table('agent_deal_percent_rules').select('*').execute()
+        # Get agents for joining
+        agents_response = supabase.table(TABLE_AGENTS).select('agent_id, agent_name').execute()
+        agents_map = {agent['agent_id']: agent['agent_name'] for agent in agents_response.data}
+        
+        # Add agent_name to each deal rule
+        data = []
+        for row in rules_response.data:
+            row_dict = dict(row)
+            agent_id = row_dict.get('agent_id')
+            row_dict['agent_name'] = agents_map.get(agent_id) if agent_id else None
+            data.append(row_dict)
+        
+        return {'data': data, 'count': len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post('/real_names/upsert')
+async def upsert_real_name(real_name_data: UpsertRealNameRequest, current_user: User = Depends(get_current_user)):
+    try:
+        # Validate agent exists
+        agent_check = supabase.table(TABLE_AGENTS).select('agent_id').eq('agent_id', real_name_data.agent_id).execute()
+        if not agent_check.data:
+            raise HTTPException(status_code=404, detail=f'Agent with ID {real_name_data.agent_id} not found')
+        
+        data = {
+            'player_id': real_name_data.player_id,
+            'agent_id': real_name_data.agent_id,
+            'real_name': real_name_data.real_name
+        }
+        
+        if real_name_data.id is not None:
+            check_response = supabase.table('real_name_mapping').select('*').eq('id', real_name_data.id).execute()
+            if not check_response.data:
+                raise HTTPException(status_code=404, detail=f'Real name mapping with ID {real_name_data.id} not found')
+            
+            response = supabase.table('real_name_mapping').update(data).eq('id', real_name_data.id).execute()
+            if not response.data:
+                raise HTTPException(status_code=500, detail='Failed to update real name mapping')
+            
+            log_operation(
+                supabase=supabase,
+                user=current_user,
+                operation_type='UPDATE',
+                table_name='real_name_mapping',
+                record_id=real_name_data.id,
+                operation_data={'updated_fields': data, 'id': real_name_data.id}
+            )
+            
+            return {'data': response.data[0], 'message': 'Real name mapping updated successfully'}
+        else:
+            response = supabase.table('real_name_mapping').insert(data).execute()
+            if not response.data:
+                raise HTTPException(status_code=500, detail='Failed to create real name mapping')
+            
+            created_id = response.data[0].get('id')
+            log_operation(
+                supabase=supabase,
+                user=current_user,
+                operation_type='CREATE',
+                table_name='real_name_mapping',
+                record_id=created_id,
+                operation_data={'created_data': response.data[0]}
+            )
+            
+            return {'data': response.data[0], 'message': 'Real name mapping created successfully'}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post('/deal_rules/upsert')
+async def upsert_deal_rule(deal_rule_data: UpsertDealRuleRequest, current_user: User = Depends(get_current_user)):
+    try:
+        # Validate agent exists
+        agent_check = supabase.table(TABLE_AGENTS).select('agent_id').eq('agent_id', deal_rule_data.agent_id).execute()
+        if not agent_check.data:
+            raise HTTPException(status_code=404, detail=f'Agent with ID {deal_rule_data.agent_id} not found')
+        
+        # Validate deal_percent is between 0 and 1
+        if deal_rule_data.deal_percent < 0 or deal_rule_data.deal_percent > 1:
+            raise HTTPException(status_code=400, detail='deal_percent must be between 0 and 1')
+        
+        data = {
+            'agent_id': deal_rule_data.agent_id,
+            'threshold': deal_rule_data.threshold,
+            'deal_percent': deal_rule_data.deal_percent
+        }
+        
+        if deal_rule_data.id is not None:
+            check_response = supabase.table('agent_deal_percent_rules').select('*').eq('id', deal_rule_data.id).execute()
+            if not check_response.data:
+                raise HTTPException(status_code=404, detail=f'Deal rule with ID {deal_rule_data.id} not found')
+            
+            response = supabase.table('agent_deal_percent_rules').update(data).eq('id', deal_rule_data.id).execute()
+            if not response.data:
+                raise HTTPException(status_code=500, detail='Failed to update deal rule')
+            
+            log_operation(
+                supabase=supabase,
+                user=current_user,
+                operation_type='UPDATE',
+                table_name='agent_deal_percent_rules',
+                record_id=deal_rule_data.id,
+                operation_data={'updated_fields': data, 'id': deal_rule_data.id}
+            )
+            
+            return {'data': response.data[0], 'message': 'Deal rule updated successfully'}
+        else:
+            response = supabase.table('agent_deal_percent_rules').insert(data).execute()
+            if not response.data:
+                raise HTTPException(status_code=500, detail='Failed to create deal rule')
+            
+            created_id = response.data[0].get('id')
+            log_operation(
+                supabase=supabase,
+                user=current_user,
+                operation_type='CREATE',
+                table_name='agent_deal_percent_rules',
+                record_id=created_id,
+                operation_data={'created_data': response.data[0]}
+            )
+            
+            return {'data': response.data[0], 'message': 'Deal rule created successfully'}
     except HTTPException:
         raise
     except Exception as e:
