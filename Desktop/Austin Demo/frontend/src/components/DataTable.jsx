@@ -64,7 +64,7 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
           )}
         </div>
       )}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-lg border overflow-hidden bg-background data-table-wrapper">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
@@ -107,7 +107,7 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
               table.getRowModel().rows.map(row => (
                 <TableRow 
                   key={row.id} 
-                  className={`hover:bg-muted/50 transition-colors ${getRowClassName ? getRowClassName(row) : ''}`}
+                  className={`transition-colors ${getRowClassName ? getRowClassName(row) : ''}`}
                 >
                   {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id} className="text-center">
@@ -121,7 +121,7 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
         </Table>
       </div>
       
-      <div className="flex items-center justify-between px-2">
+      <div className="flex items-center justify-between px-2 pb-3">
         <div className="flex items-center gap-2" style={{ minWidth: '150px' }}>
           <p className="text-sm text-muted-foreground">
             Page <strong>{table.getState().pagination.pageIndex + 1}</strong> of{' '}

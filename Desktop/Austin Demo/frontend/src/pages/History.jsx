@@ -4,6 +4,7 @@ import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { formatNumber } from '../utils/numberFormat';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
@@ -123,11 +124,11 @@ function History() {
     { accessorKey: 'game_count', header: 'Total Hands' },
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => `${Number(info.getValue()).toFixed(2)}` },
-    { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => `${Number(info.getValue() || 0).toFixed(2)}` },
-    { accessorKey: 'takehome_tips', header: 'Takehome Tips', cell: info => `${Number(info.getValue() || 0).toFixed(2)}` },
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => formatNumber(info.getValue()) },
+    { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => formatNumber(info.getValue() || 0) },
+    { accessorKey: 'takehome_tips', header: 'Takehome Tips', cell: info => formatNumber(info.getValue() || 0) },
   ], []);
 
   const individualColumns = useMemo(() => [
@@ -137,12 +138,12 @@ function History() {
     { accessorKey: 'date_started', header: 'Date Started', cell: info => new Date(info.getValue()).toLocaleString() },
     { accessorKey: 'date_ended', header: 'Date Ended', cell: info => new Date(info.getValue()).toLocaleString() },
     { accessorKey: 'game_type', header: 'Game Type' },
-    { accessorKey: 'big_blind', header: 'Big Blind', cell: info => `${Number(info.getValue()).toFixed(2)}` },
+    { accessorKey: 'big_blind', header: 'Big Blind', cell: info => formatNumber(info.getValue()) },
     { accessorKey: 'profit', header: 'Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'tips', header: 'Tips', cell: info => `${Number(info.getValue()).toFixed(2)}` },
+    { accessorKey: 'tips', header: 'Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
   const selectedCount = selectedPlayerIds.length;
@@ -268,17 +269,15 @@ function History() {
                   onChange={setAggregatedSearch}
                 />
               </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={aggregatedData}
-                  columns={aggregatedColumns}
-                  isLoading={isLoading}
-                  emptyMessage="No aggregated data available"
-                  globalFilter={aggregatedSearch}
-                  onGlobalFilterChange={setAggregatedSearch}
-                  hideSearch={true}
-                />
-              </CardContent>
+              <DataTable
+                data={aggregatedData}
+                columns={aggregatedColumns}
+                isLoading={isLoading}
+                emptyMessage="No aggregated data available"
+                globalFilter={aggregatedSearch}
+                onGlobalFilterChange={setAggregatedSearch}
+                hideSearch={true}
+              />
             </Card>
           )}
 
@@ -291,17 +290,15 @@ function History() {
                   onChange={setIndividualSearch}
                 />
               </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={individualRecords}
-                  columns={individualColumns}
-                  isLoading={isLoading}
-                  emptyMessage="No individual records available"
-                  globalFilter={individualSearch}
-                  onGlobalFilterChange={setIndividualSearch}
-                  hideSearch={true}
-                />
-              </CardContent>
+              <DataTable
+                data={individualRecords}
+                columns={individualColumns}
+                isLoading={isLoading}
+                emptyMessage="No individual records available"
+                globalFilter={individualSearch}
+                onGlobalFilterChange={setIndividualSearch}
+                hideSearch={true}
+              />
             </Card>
           )}
 

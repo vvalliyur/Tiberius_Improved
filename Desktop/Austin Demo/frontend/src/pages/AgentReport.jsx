@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getAgentReport } from '../utils/api';
 import DataTable from '../components/DataTable';
 import DateRangeFilter from '../components/DateRangeFilter';
+import { formatNumber } from '../utils/numberFormat';
 import './AgentReport.css';
 
 function AgentReport() {
@@ -22,7 +23,7 @@ function AgentReport() {
         const value = Number(info.getValue());
         return (
           <span className={value >= 0 ? 'profit-positive' : 'profit-negative'}>
-            {value.toFixed(2)}
+            {formatNumber(value)}
           </span>
         );
       },
@@ -90,7 +91,7 @@ function AgentReport() {
         <div className="summary-card">
           <div className="summary-label">Total Agent Tips</div>
           <div className="summary-value">
-            {reportData.reduce((sum, row) => sum + Number(row.agent_tips || 0), 0).toFixed(2)}
+            {formatNumber(reportData.reduce((sum, row) => sum + Number(row.agent_tips || 0), 0))}
           </div>
         </div>
       </div>

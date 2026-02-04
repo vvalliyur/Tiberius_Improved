@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { getDetailedAgentReport } from '../utils/api';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { formatNumber } from '../utils/numberFormat';
 import './DetailedAgentReport.css';
 
 const formatDealPercent = (value) => {
@@ -176,15 +177,15 @@ function DetailedAgentReport() {
         const totalTips = typeof player.total_tips === 'number' ? player.total_tips : 0;
         const agentTips = typeof player.agent_tips === 'number' ? player.agent_tips : 0;
         if (groupBy === 'real_name') {
-          return `${player.player_name || ''}, ${player.player_ids || ''}, ${(dealPercent * 100).toFixed(2)}%, ${totalTips.toFixed(2)}, ${agentTips.toFixed(2)}`;
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
         } else {
-          return `${player.player_id || ''}, ${player.player_name || ''}, ${(dealPercent * 100).toFixed(2)}%, ${totalTips.toFixed(2)}, ${agentTips.toFixed(2)}`;
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
         }
       }).filter(Boolean);
       
       const totalTips = typeof agent.total_tips === 'number' ? agent.total_tips : 0;
       const totalAgentTips = typeof agent.total_agent_tips === 'number' ? agent.total_agent_tips : 0;
-      const totalsRow = `Total, , , ${totalTips.toFixed(2)}, ${totalAgentTips.toFixed(2)}`;
+      const totalsRow = `Total, , , ${formatNumber(totalTips)}, ${formatNumber(totalAgentTips)}`;
       
       const text = [...rows, totalsRow].join('\n');
       
@@ -269,11 +270,11 @@ function DetailedAgentReport() {
                     </div>
                     <div className="summary-item">
                       <span className="summary-label text-center">Total Tips</span>
-                      <span className="summary-value text-center tips-value">{typeof agent.total_tips === 'number' ? agent.total_tips.toFixed(2) : '0.00'}</span>
+                      <span className="summary-value text-center tips-value">{typeof agent.total_tips === 'number' ? formatNumber(agent.total_tips) : '0'}</span>
                     </div>
                     <div className="summary-item tips-summary">
                       <span className="summary-label text-center">Agent Tips</span>
-                      <span className="summary-value text-center highlight agent-tips-value">{typeof agent.total_agent_tips === 'number' ? agent.total_agent_tips.toFixed(2) : '0.00'}</span>
+                      <span className="summary-value text-center highlight agent-tips-value">{typeof agent.total_agent_tips === 'number' ? formatNumber(agent.total_agent_tips) : '0'}</span>
                     </div>
                   </div>
                   <div className="agent-header-buttons">
@@ -384,15 +385,15 @@ function DetailedAgentReport() {
                               )}
                               <td>{formatDealPercent(dealPercent)}</td>
                               <td>{typeof player.total_hands === 'number' ? player.total_hands.toLocaleString() : (player.total_hands || 0)}</td>
-                              <td className="tips-cell">{totalTips.toFixed(2)}</td>
-                              <td className="tips-cell">{agentTips.toFixed(2)}</td>
+                              <td className="tips-cell">{formatNumber(totalTips)}</td>
+                              <td className="tips-cell">{formatNumber(agentTips)}</td>
                             </tr>
                           );
                         })}
                         <tr className="totals-row">
                           <td colSpan="4" className="totals-label">Total</td>
-                          <td className="totals-value tips-cell">{typeof agent.total_tips === 'number' ? agent.total_tips.toFixed(2) : '0.00'}</td>
-                          <td className="totals-value tips-cell">{typeof agent.total_agent_tips === 'number' ? agent.total_agent_tips.toFixed(2) : '0.00'}</td>
+                          <td className="totals-value tips-cell">{typeof agent.total_tips === 'number' ? formatNumber(agent.total_tips) : '0'}</td>
+                          <td className="totals-value tips-cell">{typeof agent.total_agent_tips === 'number' ? formatNumber(agent.total_agent_tips) : '0'}</td>
                         </tr>
                       </tbody>
                     ) : null}

@@ -4,6 +4,7 @@ import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { formatNumber } from '../utils/numberFormat';
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('game-data');
@@ -23,14 +24,14 @@ function Dashboard() {
     { accessorKey: 'date_started', header: 'Date Started', cell: info => new Date(info.getValue()).toLocaleString() },
     { accessorKey: 'date_ended', header: 'Date Ended', cell: info => new Date(info.getValue()).toLocaleString() },
     { accessorKey: 'game_type', header: 'Game Type' },
-    { accessorKey: 'big_blind', header: 'Big Blind', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'big_blind', header: 'Big Blind', cell: info => formatNumber(info.getValue()) },
     { accessorKey: 'profit', header: 'Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'tips', header: 'Tips', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'buy_in', header: 'Buy In', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'tips', header: 'Tips', cell: info => formatNumber(info.getValue()) },
+    { accessorKey: 'buy_in', header: 'Buy In', cell: info => formatNumber(info.getValue()) },
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
   const aggregatedDataColumns = useMemo(() => [
@@ -38,9 +39,9 @@ function Dashboard() {
     { accessorKey: 'player_name', header: 'Player Name' },
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => formatNumber(info.getValue()) },
     { accessorKey: 'game_count', header: 'Game Count' },
   ], []);
 
@@ -145,17 +146,15 @@ function Dashboard() {
             onChange={setSearchFilter}
           />
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={activeTab === 'game-data' ? gameData : aggregatedData}
-            columns={activeTab === 'game-data' ? gameDataColumns : aggregatedDataColumns}
-            isLoading={isLoading}
-            emptyMessage={`No ${activeTab === 'game-data' ? 'game data' : 'aggregated data'} available`}
-            globalFilter={searchFilter}
-            onGlobalFilterChange={setSearchFilter}
-            hideSearch={true}
-          />
-        </CardContent>
+        <DataTable
+          data={activeTab === 'game-data' ? gameData : aggregatedData}
+          columns={activeTab === 'game-data' ? gameDataColumns : aggregatedDataColumns}
+          isLoading={isLoading}
+          emptyMessage={`No ${activeTab === 'game-data' ? 'game data' : 'aggregated data'} available`}
+          globalFilter={searchFilter}
+          onGlobalFilterChange={setSearchFilter}
+          hideSearch={true}
+        />
       </Card>
     </div>
   );

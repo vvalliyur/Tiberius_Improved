@@ -5,6 +5,7 @@ import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { ChevronDown, ChevronUp, Copy, Check, Send } from 'lucide-react';
+import { formatNumber } from '../utils/numberFormat';
 import './AgentReport.css';
 import './DetailedAgentReport.css';
 
@@ -43,7 +44,7 @@ function AgentReports() {
         return (
           <div className="text-center">
             <span className={value >= 0 ? 'profit-positive' : 'profit-negative'}>
-              {value.toFixed(2)}
+              {formatNumber(value)}
             </span>
           </div>
         );
@@ -52,12 +53,12 @@ function AgentReports() {
     {
       accessorKey: 'total_tips',
       header: 'Total Tips',
-      cell: info => <div className="text-center">{Number(info.getValue()).toFixed(2)}</div>,
+      cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
     },
     {
       accessorKey: 'agent_tips',
       header: 'Agent Tips',
-      cell: info => <div className="text-center">{Number(info.getValue()).toFixed(2)}</div>,
+      cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
     },
   ];
 
@@ -167,13 +168,13 @@ function AgentReports() {
     // Compact format: Player ID, Player Name, Deal %, Total Tips, Agent Tips
     const rows = agent.players.map(player => {
       if (groupBy === 'real_name') {
-        return `${player.player_name || ''}, ${player.player_ids || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+        return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
       } else {
-        return `${player.player_id || ''}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+        return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
       }
     });
     
-    const totalsRow = `Total, , , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
+    const totalsRow = `Total, , , ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
     
     const text = [...rows, totalsRow].join('\n');
     
@@ -191,13 +192,13 @@ function AgentReports() {
       // Format the message similar to clipboard copy
       const rows = agent.players.map(player => {
         if (groupBy === 'real_name') {
-          return `${player.player_name || ''}, ${player.player_ids || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
         } else {
-          return `${player.player_id || ''}, ${player.player_name || ''}, ${(player.deal_percent * 100).toFixed(2)}%, ${player.total_tips.toFixed(2)}, ${player.agent_tips.toFixed(2)}`;
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
         }
       });
       
-      const totalsRow = `Total, , , ${agent.total_tips.toFixed(2)}, ${agent.total_agent_tips.toFixed(2)}`;
+      const totalsRow = `Total, , , ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
       
       const header = groupBy === 'real_name' 
         ? `Real Name, Player IDs, Deal %, Total Tips, Agent Tips`
@@ -242,47 +243,45 @@ function AgentReports() {
               onChange={setAggregatedSearch}
             />
           </CardHeader>
-          <CardContent>
-            <DataTable
-              data={aggregatedData}
-              columns={aggregatedColumns}
-              isLoading={isLoading}
-              emptyMessage="No agent report data available. Adjust filters or upload game data"
-              globalFilter={aggregatedSearch}
-              onGlobalFilterChange={setAggregatedSearch}
-              hideSearch={true}
-            />
-            {/* Totals Row */}
-            {aggregatedData.length > 0 && (() => {
-              const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
-              const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
-              
-              return (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="rounded-lg border overflow-hidden">
-                    <table className="w-full">
-                      <tbody>
-                        <tr className="border-b-0 bg-muted/30 font-semibold">
-                          <td className="p-4 text-center">Total:</td>
-                          <td className="p-4 text-center">
-                            <span className={totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}>
-                              {totalProfit.toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="p-4 text-center">
-                            {totalTips.toFixed(2)}
-                          </td>
-                          <td className="p-4 text-center">
-                            {/* Empty cell for Agent Tips column alignment */}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+          <DataTable
+            data={aggregatedData}
+            columns={aggregatedColumns}
+            isLoading={isLoading}
+            emptyMessage="No agent report data available. Adjust filters or upload game data"
+            globalFilter={aggregatedSearch}
+            onGlobalFilterChange={setAggregatedSearch}
+            hideSearch={true}
+          />
+          {/* Totals Row */}
+          {aggregatedData.length > 0 && (() => {
+            const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
+            const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
+            
+            return (
+              <div className="mt-4 pt-4 border-t px-3 pb-3">
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full">
+                    <tbody>
+                      <tr className="border-b-0 bg-muted/30 font-semibold">
+                        <td className="p-4 text-center">Total:</td>
+                        <td className="p-4 text-center">
+                          <span className={totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}>
+                            {formatNumber(totalProfit)}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          {formatNumber(totalTips)}
+                        </td>
+                        <td className="p-4 text-center">
+                          {/* Empty cell for Agent Tips column alignment */}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-              );
-            })()}
-          </CardContent>
+              </div>
+            );
+          })()}
         </Card>
       )}
 
@@ -333,11 +332,11 @@ function AgentReports() {
                       </div>
                       <div className="summary-item">
                         <span className="summary-label text-center">Total Tips</span>
-                        <span className="summary-value text-center">{agent.total_tips.toFixed(2)}</span>
+                        <span className="summary-value text-center">{formatNumber(agent.total_tips)}</span>
                       </div>
                       <div className="summary-item">
                         <span className="summary-label text-center">Agent Tips</span>
-                        <span className="summary-value text-center highlight">{agent.total_agent_tips.toFixed(2)}</span>
+                        <span className="summary-value text-center highlight">{formatNumber(agent.total_agent_tips)}</span>
                       </div>
                     </div>
                     <div className="agent-header-buttons">
@@ -419,14 +418,14 @@ function AgentReports() {
                               )}
                               <td>{formatDealPercent(player.deal_percent)}</td>
                               <td>{player.total_hands.toLocaleString()}</td>
-                              <td className="tips-cell">{player.total_tips.toFixed(2)}</td>
-                              <td className="tips-cell">{player.agent_tips.toFixed(2)}</td>
+                              <td className="tips-cell">{formatNumber(player.total_tips)}</td>
+                              <td className="tips-cell">{formatNumber(player.agent_tips)}</td>
                             </tr>
                           ))}
                           <tr className="totals-row">
                             <td colSpan="4" className="totals-label">Total</td>
-                            <td className="totals-value tips-cell">{agent.total_tips.toFixed(2)}</td>
-                            <td className="totals-value tips-cell">{agent.total_agent_tips.toFixed(2)}</td>
+                            <td className="totals-value tips-cell">{formatNumber(agent.total_tips)}</td>
+                            <td className="totals-value tips-cell">{formatNumber(agent.total_agent_tips)}</td>
                           </tr>
                         </tbody>
                       ) : null}

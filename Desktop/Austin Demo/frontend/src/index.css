@@ -412,3 +412,101 @@ main {
   contain: layout style paint;
   min-height: 600px;
 }
+
+/* Global table styling to match detailed reports */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.data-table-header {
+  background: hsl(var(--muted) / 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table-head {
+  padding: 0.75rem 0.875rem;
+  text-align: center !important;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: hsl(var(--foreground));
+  border-bottom: 2px solid hsl(var(--border));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.data-table-head.text-center {
+  text-align: center !important;
+}
+
+.data-table-row {
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  transition: background-color 0.15s ease;
+}
+
+.data-table-row:hover {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.data-table-cell {
+  padding: 0.75rem 0.875rem;
+  text-align: center;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  vertical-align: middle;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+.data-table-cell.text-center {
+  text-align: center !important;
+}
+
+/* Custom scrollbar for tables */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Remove padding from CardContent when it contains tables */
+.card-content:has(.data-table),
+.card-content:has(table),
+.card-content:has(> div.rounded-lg.border),
+.card-content:has(> div:has(.data-table)),
+.card-content:has(> div:has(table)) {
+  padding: 0 !important;
+}
+
+/* Ensure DataTable wrapper uses full width when inside Card - remove rounded borders */
+div[class*="rounded-xl"] > .data-table-wrapper,
+div[class*="rounded-xl"] > div.rounded-lg.border.data-table-wrapper {
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+/* Add bottom padding for pagination controls when table is inside Card */
+div[class*="rounded-xl"] > .data-table-wrapper {
+  padding-bottom: 0.75rem;
+}

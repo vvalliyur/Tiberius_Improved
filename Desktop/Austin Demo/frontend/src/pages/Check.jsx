@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Download } from 'lucide-react';
 import { downloadDataErrors, downloadAllDataErrors } from '../utils/csvExport';
+import { formatCurrency } from '../utils/numberFormat';
 
 function Check() {
   const [dataErrors, setDataErrors] = useState({
@@ -102,26 +103,24 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={dataErrors.players_in_games_not_in_players.data}
-                  columns={[
-                    { accessorKey: 'player_id', header: 'Player ID' },
-                    { accessorKey: 'player_name', header: 'Player Name' },
-                    { accessorKey: 'game_count', header: 'Game Count' },
-                    { 
-                      accessorKey: 'total_tips', 
-                      header: 'Total Tips',
-                      cell: info => `$${Number(info.getValue()).toFixed(2)}`
-                    },
-                  ]}
-                  isLoading={errorsLoading}
-                  emptyMessage="No players in games not in players table"
-                  globalFilter={missingPlayersSearch}
-                  onGlobalFilterChange={setMissingPlayersSearch}
-                  hideSearch={true}
-                />
-              </CardContent>
+              <DataTable
+                data={dataErrors.players_in_games_not_in_players.data}
+                columns={[
+                  { accessorKey: 'player_id', header: 'Player ID' },
+                  { accessorKey: 'player_name', header: 'Player Name' },
+                  { accessorKey: 'game_count', header: 'Game Count' },
+                  { 
+                    accessorKey: 'total_tips', 
+                    header: 'Total Tips',
+                    cell: info => formatCurrency(info.getValue())
+                  },
+                ]}
+                isLoading={errorsLoading}
+                emptyMessage="No players in games not in players table"
+                globalFilter={missingPlayersSearch}
+                onGlobalFilterChange={setMissingPlayersSearch}
+                hideSearch={true}
+              />
             </Card>
           )}
 
@@ -157,29 +156,27 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={dataErrors.players_not_mapped_to_agents.data}
-                  columns={[
-                    { accessorKey: 'player_id', header: 'Player ID' },
-                    { accessorKey: 'player_name', header: 'Player Name' },
-                    { 
-                      accessorKey: 'agent_id', 
-                      header: 'Agent ID',
-                      cell: info => {
-                        const value = info.getValue();
-                        return value !== null && value !== undefined ? value : 'N/A';
-                      }
-                    },
-                    { accessorKey: 'error_description', header: 'Issue' },
-                  ]}
-                  isLoading={errorsLoading}
-                  emptyMessage="No players without agent mappings"
-                  globalFilter={unmappedPlayersSearch}
-                  onGlobalFilterChange={setUnmappedPlayersSearch}
-                  hideSearch={true}
-                />
-              </CardContent>
+              <DataTable
+                data={dataErrors.players_not_mapped_to_agents.data}
+                columns={[
+                  { accessorKey: 'player_id', header: 'Player ID' },
+                  { accessorKey: 'player_name', header: 'Player Name' },
+                  { 
+                    accessorKey: 'agent_id', 
+                    header: 'Agent ID',
+                    cell: info => {
+                      const value = info.getValue();
+                      return value !== null && value !== undefined ? value : 'N/A';
+                    }
+                  },
+                  { accessorKey: 'error_description', header: 'Issue' },
+                ]}
+                isLoading={errorsLoading}
+                emptyMessage="No players without agent mappings"
+                globalFilter={unmappedPlayersSearch}
+                onGlobalFilterChange={setUnmappedPlayersSearch}
+                hideSearch={true}
+              />
             </Card>
           )}
 
@@ -215,29 +212,27 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={dataErrors.agents_not_mapped_to_deal_rules.data}
-                  columns={[
-                    { accessorKey: 'agent_id', header: 'Agent ID' },
-                    { accessorKey: 'agent_name', header: 'Agent Name' },
-                    { 
-                      accessorKey: 'default_deal_percent', 
-                      header: 'Default Deal %',
-                      cell: info => {
-                        const value = info.getValue();
-                        return value !== null && value !== undefined ? `${(Number(value) * 100).toFixed(2)}%` : 'N/A';
-                      }
-                    },
-                    { accessorKey: 'rule_count', header: 'Rule Count' },
-                  ]}
-                  isLoading={errorsLoading}
-                  emptyMessage="No agents without deal rules"
-                  globalFilter={unmappedAgentsSearch}
-                  onGlobalFilterChange={setUnmappedAgentsSearch}
-                  hideSearch={true}
-                />
-              </CardContent>
+              <DataTable
+                data={dataErrors.agents_not_mapped_to_deal_rules.data}
+                columns={[
+                  { accessorKey: 'agent_id', header: 'Agent ID' },
+                  { accessorKey: 'agent_name', header: 'Agent Name' },
+                  { 
+                    accessorKey: 'default_deal_percent', 
+                    header: 'Default Deal %',
+                    cell: info => {
+                      const value = info.getValue();
+                      return value !== null && value !== undefined ? `${(Number(value) * 100).toFixed(2)}%` : 'N/A';
+                    }
+                  },
+                  { accessorKey: 'rule_count', header: 'Rule Count' },
+                ]}
+                isLoading={errorsLoading}
+                emptyMessage="No agents without deal rules"
+                globalFilter={unmappedAgentsSearch}
+                onGlobalFilterChange={setUnmappedAgentsSearch}
+                hideSearch={true}
+              />
             </Card>
           )}
         </div>

@@ -5,7 +5,7 @@ const Table = React.forwardRef(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto custom-scrollbar">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-xs", className)}
+      className={cn("w-full caption-bottom text-xs data-table", className)}
       {...props}
     />
   </div>
@@ -13,7 +13,7 @@ const Table = React.forwardRef(({ className, ...props }, ref) => (
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b data-table-header", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -39,7 +39,7 @@ const TableRow = React.forwardRef(({ className, ...props }, ref) => (
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "border-b transition-colors hover:bg-muted/30 data-[state=selected]:bg-muted data-table-row",
       className
     )}
     {...props}
@@ -51,7 +51,7 @@ const TableHead = React.forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      "h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 data-table-head",
       className
     )}
     {...props}
@@ -62,7 +62,7 @@ TableHead.displayName = "TableHead"
 const TableCell = React.forwardRef(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0 data-table-cell", className)}
     {...props}
   />
 ))

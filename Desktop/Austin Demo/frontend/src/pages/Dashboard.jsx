@@ -3,6 +3,7 @@ import { getDashboardData } from '../utils/api';
 import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { formatNumber } from '../utils/numberFormat';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -42,13 +43,13 @@ function Dashboard() {
     { accessorKey: 'agent_name', header: 'Agent Name' },
     { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+      return value !== null && value !== undefined ? formatNumber(value) : 'N/A';
     }},
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
   const blockedPlayersColumns = useMemo(() => [
@@ -57,7 +58,7 @@ function Dashboard() {
     { accessorKey: 'agent_name', header: 'Agent Name' },
     { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+      return value !== null && value !== undefined ? formatNumber(value) : 'N/A';
     }},
     { accessorKey: 'notes', header: 'Notes' },
   ], []);
@@ -68,11 +69,11 @@ function Dashboard() {
     { accessorKey: 'agent_name', header: 'Agent Name' },
     { accessorKey: 'credit_limit', header: 'Credit Limit', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+      return value !== null && value !== undefined ? formatNumber(value) : 'N/A';
     }},
     { accessorKey: 'weekly_credit_adjustment', header: 'Weekly Adjustment', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : '0.00';
+      return value !== null && value !== undefined ? formatNumber(value) : '0';
     }},
     { accessorKey: 'adjusted_credit_limit', header: 'Adjusted Credit Limit', cell: info => {
       const value = info.getValue();
@@ -80,7 +81,7 @@ function Dashboard() {
     }},
     { accessorKey: 'period_profit', header: 'Profit Since Start of Week', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
   ], []);
 
@@ -89,10 +90,10 @@ function Dashboard() {
     { accessorKey: 'agent_name', header: 'Agent Name' },
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{value.toFixed(2)}</span>;
+      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
     }},
-    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => Number(info.getValue()).toFixed(2) },
-    { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => Number(info.getValue()).toFixed(2) },
+    { accessorKey: 'total_tips', header: 'Total Tips', cell: info => formatNumber(info.getValue()) },
+    { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
   const getRowClassName = (row) => {
@@ -115,7 +116,7 @@ function Dashboard() {
           <CardHeader className="flex-1 flex flex-col justify-center">
             <CardDescription className="mb-2">Total Tips (All Time)</CardDescription>
             <CardTitle className="text-2xl font-bold leading-tight">
-              {dashboardData.tips_stats.total_all_time.toFixed(2)}
+              {formatNumber(dashboardData.tips_stats.total_all_time)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -124,7 +125,7 @@ function Dashboard() {
           <CardHeader className="flex-1 flex flex-col justify-center">
             <CardDescription className="mb-2">Previous Week Tips</CardDescription>
             <CardTitle className="text-2xl font-bold leading-tight">
-              {dashboardData.tips_stats.previous_period.toFixed(2)}
+              {formatNumber(dashboardData.tips_stats.previous_period)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -133,7 +134,7 @@ function Dashboard() {
           <CardHeader className="flex-1 flex flex-col justify-center">
             <CardDescription className="mb-2">Since Start of Week</CardDescription>
             <CardTitle className="text-2xl font-bold leading-tight">
-              {dashboardData.tips_stats.since_last_thursday.toFixed(2)}
+              {formatNumber(dashboardData.tips_stats.since_last_thursday)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -147,17 +148,15 @@ function Dashboard() {
             onChange={setBlockedPlayersSearch}
           />
         </CardHeader>
-        <CardContent className="flex-shrink-0">
-          <DataTable
-            data={dashboardData.blocked_players || []}
-            columns={blockedPlayersColumns}
-            isLoading={isLoading}
-            emptyMessage="No blocked players"
-            globalFilter={blockedPlayersSearch}
-            onGlobalFilterChange={setBlockedPlayersSearch}
-            hideSearch={true}
-          />
-        </CardContent>
+        <DataTable
+          data={dashboardData.blocked_players || []}
+          columns={blockedPlayersColumns}
+          isLoading={isLoading}
+          emptyMessage="No blocked players"
+          globalFilter={blockedPlayersSearch}
+          onGlobalFilterChange={setBlockedPlayersSearch}
+          hideSearch={true}
+        />
       </Card>
 
       {dashboardData.over_credit_limit_players?.length > 0 && (
@@ -169,17 +168,15 @@ function Dashboard() {
               onChange={setOverCreditLimitSearch}
             />
           </CardHeader>
-          <CardContent className="flex-shrink-0">
-            <DataTable
-              data={dashboardData.over_credit_limit_players}
-              columns={overCreditLimitColumns}
-              isLoading={isLoading}
-              emptyMessage="No players over credit limit"
-              globalFilter={overCreditLimitSearch}
-              onGlobalFilterChange={setOverCreditLimitSearch}
-              hideSearch={true}
-            />
-          </CardContent>
+          <DataTable
+            data={dashboardData.over_credit_limit_players}
+            columns={overCreditLimitColumns}
+            isLoading={isLoading}
+            emptyMessage="No players over credit limit"
+            globalFilter={overCreditLimitSearch}
+            onGlobalFilterChange={setOverCreditLimitSearch}
+            hideSearch={true}
+          />
         </Card>
       )}
 
@@ -190,18 +187,16 @@ function Dashboard() {
             value={agentReportSearch}
             onChange={setAgentReportSearch}
           />
-        </CardHeader>
-        <CardContent className="flex-shrink-0">
-          <DataTable
-            data={dashboardData.agent_report}
-            columns={agentColumns}
-            isLoading={isLoading}
-            emptyMessage="No agent data available"
-            globalFilter={agentReportSearch}
-            onGlobalFilterChange={setAgentReportSearch}
-            hideSearch={true}
-          />
-        </CardContent>
+          </CardHeader>
+        <DataTable
+          data={dashboardData.agent_report}
+          columns={agentColumns}
+          isLoading={isLoading}
+          emptyMessage="No agent data available"
+          globalFilter={agentReportSearch}
+          onGlobalFilterChange={setAgentReportSearch}
+          hideSearch={true}
+        />
       </Card>
 
       <Card className="overflow-hidden flex-shrink-0">
@@ -211,19 +206,17 @@ function Dashboard() {
             value={playerAggregatesSearch}
             onChange={setPlayerAggregatesSearch}
           />
-        </CardHeader>
-        <CardContent className="flex-shrink-0">
-          <DataTable
-            data={dashboardData.player_aggregates}
-            columns={playerColumns}
-            isLoading={isLoading}
-            emptyMessage="No player data available"
-            getRowClassName={getRowClassName}
-            globalFilter={playerAggregatesSearch}
-            onGlobalFilterChange={setPlayerAggregatesSearch}
-            hideSearch={true}
-          />
-        </CardContent>
+          </CardHeader>
+        <DataTable
+          data={dashboardData.player_aggregates}
+          columns={playerColumns}
+          isLoading={isLoading}
+          emptyMessage="No player data available"
+          getRowClassName={getRowClassName}
+          globalFilter={playerAggregatesSearch}
+          onGlobalFilterChange={setPlayerAggregatesSearch}
+          hideSearch={true}
+        />
       </Card>
     </div>
   );

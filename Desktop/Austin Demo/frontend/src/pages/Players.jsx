@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAgents, getPlayers, upsertPlayer } from '../utils/api';
 import DataTable from '../components/DataTable';
 import Drawer from '../components/Drawer';
+import { formatNumber } from '../utils/numberFormat';
 import './Players.css';
 
 function Players() {
@@ -31,7 +32,7 @@ function Players() {
     { accessorKey: 'credit_limit', header: 'Credit Limit' },
     { accessorKey: 'weekly_credit_adjustment', header: 'Weekly Credit Adjustment', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : '0.00';
+      return value !== null && value !== undefined ? formatNumber(value) : '0';
     }},
     { accessorKey: 'is_blocked', header: 'Do Not Allow', cell: info => info.getValue() ? 'Yes' : 'No' },
     { accessorKey: 'comm_channel', header: 'Comm Channel' },
