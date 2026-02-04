@@ -161,7 +161,7 @@ function DealRules() {
                   required
                   placeholder="e.g., 1000.00"
                 />
-                <small className="form-help-text">Rule applies when tips >= this threshold</small>
+                <small className="form-help-text">Rule applies when tips &gt;= this threshold</small>
               </div>
               <div className="form-group">
                 <label>Deal % *</label>

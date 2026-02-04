@@ -322,7 +322,7 @@ if __name__ == '__main__':
         pass
         
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    
+    print(f"Running email ingestor for {GMAIL_USER_EMAIL}")
     result = run_email_ingestor(
         supabase=supabase,
         user_email=GMAIL_USER_EMAIL,

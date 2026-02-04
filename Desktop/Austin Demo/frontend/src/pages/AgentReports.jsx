@@ -100,10 +100,16 @@ function AgentReports() {
           deal_percent: row.deal_percent,
           players: [],
           total_hands: 0,
+          total_profit: 0,
           total_tips: 0,
           total_agent_tips: 0,
         };
       }
+      
+      const totalHands = parseInt(row.total_hands || 0) || 0;
+      const totalProfit = parseFloat(row.total_profit || 0) || 0;
+      const totalTips = parseFloat(row.total_tips || 0) || 0;
+      const agentTips = parseFloat(row.agent_tips || 0) || 0;
       
       // Handle both player_id grouping and real_name grouping
       if (row.real_name) {
@@ -113,9 +119,10 @@ function AgentReports() {
           player_ids: row.player_ids || '',
           player_name: row.real_name,
           deal_percent: parseFloat(row.deal_percent || 0),
-          total_hands: row.total_hands,
-          total_tips: parseFloat(row.total_tips || 0),
-          agent_tips: parseFloat(row.agent_tips || 0),
+          total_hands: totalHands,
+          total_profit: totalProfit,
+          total_tips: totalTips,
+          agent_tips: agentTips,
           isRealName: true,
         });
       } else {
@@ -125,14 +132,16 @@ function AgentReports() {
           player_id: row.player_id,
           player_name: row.player_name,
           deal_percent: parseFloat(row.deal_percent || 0),
-          total_hands: row.total_hands,
-          total_tips: parseFloat(row.total_tips || 0),
-          agent_tips: parseFloat(row.agent_tips || 0),
+          total_hands: totalHands,
+          total_profit: totalProfit,
+          total_tips: totalTips,
+          agent_tips: agentTips,
           isRealName: false,
         });
       }
       
-      acc[agentId].total_hands += parseInt(row.total_hands || 0);
+      acc[agentId].total_hands += totalHands;
+      acc[agentId].total_profit += totalProfit;
       acc[agentId].total_tips += parseFloat(row.total_tips || 0);
       acc[agentId].total_agent_tips += parseFloat(row.agent_tips || 0);
       return acc;
@@ -165,16 +174,16 @@ function AgentReports() {
   };
 
   const copyTableToClipboard = async (agent) => {
-    // Compact format: Player ID, Player Name, Deal %, Total Tips, Agent Tips
+    // Compact format: Player ID, Player Name, Deal %, Total Profit, Total Tips, Agent Tips
     const rows = agent.players.map(player => {
       if (groupBy === 'real_name') {
-        return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+        return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
       } else {
-        return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+        return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
       }
     });
     
-    const totalsRow = `Total, , , ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
+    const totalsRow = `Total, , , , ${formatNumber(agent.total_profit || 0)}, ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
     
     const text = [...rows, totalsRow].join('\n');
     
@@ -192,17 +201,17 @@ function AgentReports() {
       // Format the message similar to clipboard copy
       const rows = agent.players.map(player => {
         if (groupBy === 'real_name') {
-          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
         } else {
-          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
         }
       });
       
-      const totalsRow = `Total, , , ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
+      const totalsRow = `Total, , , , ${formatNumber(agent.total_profit || 0)}, ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
       
       const header = groupBy === 'real_name' 
-        ? `Real Name, Player IDs, Deal %, Total Tips, Agent Tips`
-        : `Player ID, Player Name, Deal %, Total Tips, Agent Tips`;
+        ? `Real Name, Player IDs, Deal %, Total Profit, Total Tips, Agent Tips`
+        : `Player ID, Player Name, Deal %, Total Profit, Total Tips, Agent Tips`;
       
       const message = `<b>${agent.agent_name} - Agent Report</b>\n\n${header}\n${rows.join('\n')}\n${totalsRow}`;
       
@@ -331,6 +340,12 @@ function AgentReports() {
                         <span className="summary-value text-center">{agent.players.length}</span>
                       </div>
                       <div className="summary-item">
+                        <span className="summary-label text-center">Total Profit</span>
+                        <span className={`summary-value text-center ${agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}`}>
+                          {formatNumber(agent.total_profit)}
+                        </span>
+                      </div>
+                      <div className="summary-item">
                         <span className="summary-label text-center">Total Tips</span>
                         <span className="summary-value text-center">{formatNumber(agent.total_tips)}</span>
                       </div>
@@ -395,7 +410,7 @@ function AgentReports() {
                               </>
                             )}
                             <th>Deal %</th>
-                            <th>Total Hands</th>
+                            <th className="tips-header">Total Profit</th>
                             <th className="tips-header">Total Tips</th>
                             <th className="tips-header">Agent Tips</th>
                           </tr>
@@ -417,13 +432,22 @@ function AgentReports() {
                                 </>
                               )}
                               <td>{formatDealPercent(player.deal_percent)}</td>
-                              <td>{player.total_hands.toLocaleString()}</td>
+                              <td className="tips-cell">
+                                <span className={player.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                                  {formatNumber(player.total_profit || 0)}
+                                </span>
+                              </td>
                               <td className="tips-cell">{formatNumber(player.total_tips)}</td>
                               <td className="tips-cell">{formatNumber(player.agent_tips)}</td>
                             </tr>
                           ))}
                           <tr className="totals-row">
-                            <td colSpan="4" className="totals-label">Total</td>
+                            <td colSpan="3" className="totals-label">Total</td>
+                            <td className="totals-value tips-cell">
+                              <span className={agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                                {formatNumber(agent.total_profit || 0)}
+                              </span>
+                            </td>
                             <td className="totals-value tips-cell">{formatNumber(agent.total_tips)}</td>
                             <td className="totals-value tips-cell">{formatNumber(agent.total_agent_tips)}</td>
                           </tr>

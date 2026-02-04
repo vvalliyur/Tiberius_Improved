@@ -55,6 +55,11 @@ function DetailedAgentReport() {
         dataByRealName = responseByRealName.data || [];
       }
       
+      // Debug: Log first row to check data structure
+      if (dataByPlayerId.length > 0) {
+        console.log('Sample row data:', dataByPlayerId[0]);
+      }
+      
       setReportData(dataByPlayerId);
       setReportDataByRealName(dataByRealName);
     } catch (err) {
@@ -409,7 +414,7 @@ function DetailedAgentReport() {
                           );
                         })}
                         <tr className="totals-row">
-                          <td colSpan="4" className="totals-label">Total</td>
+                          <td colSpan="3" className="totals-label">Total</td>
                           <td className="totals-value tips-cell">
                             <span className={agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                               {typeof agent.total_profit === 'number' ? formatNumber(agent.total_profit) : '0'}
