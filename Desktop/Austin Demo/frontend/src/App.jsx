@@ -12,7 +12,18 @@ import Check from './pages/Check';
 
 function App() {
   const { user, token, loading: authLoading } = useAuth();
-  const [activePage, setActivePage] = useState('dashboard');
+  // Load saved page from localStorage synchronously during initialization
+  const [activePage, setActivePage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedPage = localStorage.getItem('activePage');
+        return savedPage || 'dashboard';
+      } catch (e) {
+        return 'dashboard';
+      }
+    }
+    return 'dashboard';
+  });
   const prevPageRef = useRef(activePage);
 
   // Lock scroll position during page transitions
@@ -50,6 +61,8 @@ function App() {
 
   const handlePageChange = (page) => {
     setActivePage(page);
+    // Save to localStorage for persistence across page refreshes
+    localStorage.setItem('activePage', page);
   };
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

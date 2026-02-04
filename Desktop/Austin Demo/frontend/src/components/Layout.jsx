@@ -63,9 +63,9 @@ export default function Layout({ children, activePage, onPageChange }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <nav className="border-b bg-background fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', width: '100%', position: 'fixed', top: 0, left: 0, right: 0 }}>
+      <nav className="border-b bg-background fixed top-0 left-0 right-0 z-50 shadow-sm" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', width: '100%', position: 'fixed', top: 0, left: 0, right: 0, willChange: 'auto' }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
-          <div className="flex items-center justify-between" style={{ height: '80px', minHeight: '80px', maxHeight: '80px' }}>
+          <div className="flex items-center justify-between" style={{ height: '80px', minHeight: '80px', maxHeight: '80px', containLayout: 'strict' }}>
             <div className="flex-shrink-0">
               <div 
                 className="cursor-pointer hover:opacity-80 transition-opacity flex items-center"
@@ -81,7 +81,7 @@ export default function Layout({ children, activePage, onPageChange }) {
               </div>
             </div>
             
-            <div className="hidden md:flex flex-1 items-center justify-center gap-2">
+            <div className="hidden md:flex flex-1 items-center justify-center gap-2" style={{ minHeight: '44px', height: '44px' }}>
               <Button
                 variant={activePage === 'dashboard' ? 'default' : 'ghost'}
                 size="lg"
