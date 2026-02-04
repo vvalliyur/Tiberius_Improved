@@ -93,33 +93,34 @@ function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 w-full">
-      <div className="space-y-2 h-[88px] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold tracking-tight">Raw Data</h1>
-        <p className="text-lg text-muted-foreground">View game data and aggregated statistics</p>
-      </div>
-
-      <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
-        <button
-          className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-            activeTab === 'game-data'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('game-data')}
-        >
-          Game Data
-        </button>
-        <button
-          className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-            activeTab === 'aggregated'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('aggregated')}
-        >
-          Aggregated Data
-        </button>
+    <div className="space-y-4 w-full">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Raw Data</h1>
+          <p className="text-lg text-muted-foreground">View game data and aggregated statistics</p>
+        </div>
+        <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+          <button
+            className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'game-data'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+            onClick={() => setActiveTab('game-data')}
+          >
+            Game Data
+          </button>
+          <button
+            className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'aggregated'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+            onClick={() => setActiveTab('aggregated')}
+          >
+            Aggregated Data
+          </button>
+        </div>
       </div>
 
       <DateRangeFilter
