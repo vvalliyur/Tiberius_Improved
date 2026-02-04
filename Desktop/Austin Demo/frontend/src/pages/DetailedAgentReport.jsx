@@ -194,7 +194,6 @@ function DetailedAgentReport() {
     <div className="detailed-agent-report-page">
       <div className="page-header">
         <div className="flex items-center justify-between">
-          <h1>Detailed Agent Report</h1>
           <div className="flex gap-2">
             <button
               type="button"

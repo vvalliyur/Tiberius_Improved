@@ -209,11 +209,6 @@ function AgentReports() {
 
   return (
     <div className="space-y-8 w-full">
-      <div className="space-y-2 h-[88px] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold tracking-tight">Agent Report</h1>
-        <p className="text-lg text-muted-foreground">View aggregated and detailed agent performance reports</p>
-      </div>
-
       <DateRangeFilter
         startDate={startDate}
         endDate={endDate}
@@ -241,7 +236,7 @@ function AgentReports() {
               onChange={setAggregatedSearch}
             />
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent>
             <DataTable
               data={aggregatedData}
               columns={aggregatedColumns}

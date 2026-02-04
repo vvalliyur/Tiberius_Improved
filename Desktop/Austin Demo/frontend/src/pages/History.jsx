@@ -149,11 +149,6 @@ function History() {
 
   return (
     <div className="space-y-8 w-full" data-page-container>
-      <div className="space-y-2 h-[88px] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold tracking-tight">Player History</h1>
-        <p className="text-lg text-muted-foreground">View historical data for selected players</p>
-      </div>
-
       <div className="flex gap-6" style={{ minHeight: '600px', height: 'calc(100vh - 280px)' }}>
         <div className="w-80 flex-shrink-0" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
           <Card className="h-full flex flex-col shadow-elevated" style={{ height: '100%' }}>
@@ -273,7 +268,7 @@ function History() {
                   onChange={setAggregatedSearch}
                 />
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <DataTable
                   data={aggregatedData}
                   columns={aggregatedColumns}
@@ -296,7 +291,7 @@ function History() {
                   onChange={setIndividualSearch}
                 />
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <DataTable
                   data={individualRecords}
                   columns={individualColumns}

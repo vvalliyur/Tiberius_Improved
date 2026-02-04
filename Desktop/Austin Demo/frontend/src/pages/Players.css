@@ -62,7 +62,14 @@
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
+}
+
+/* Full-width fields (textarea, toggle, etc.) */
+.form-group:has(textarea),
+.form-group:has(.toggle-label),
+.form-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .form-group label {

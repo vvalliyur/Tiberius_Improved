@@ -85,6 +85,19 @@
   padding-bottom: 2rem;
 }
 
+.drawer-content form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.drawer-content .form-actions {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
 /* Custom scrollbar for drawer */
 .drawer-content::-webkit-scrollbar {
   width: 8px;

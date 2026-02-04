@@ -242,7 +242,7 @@ function Players() {
               </div>
               <div className="form-group">
                 <label className="toggle-label">
-                  <span className="toggle-label-text">Block</span>
+                  <span className="toggle-label-text">Do Not Allow (Block Player)</span>
                   <div className="toggle-switch">
                     <input
                       type="checkbox"
@@ -254,6 +254,7 @@ function Players() {
                     <span className="toggle-slider"></span>
                   </div>
                 </label>
+                <small className="form-help-text">When enabled, this player will not be allowed to sit</small>
               </div>
               <div className="form-actions">
                 <button type="submit" disabled={isLoading} className="submit-button">

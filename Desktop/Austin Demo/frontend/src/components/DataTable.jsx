@@ -45,7 +45,7 @@ export default function DataTable({ data, columns, isLoading = false, emptyMessa
   });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {!hideSearch && (
         <div className="flex items-center gap-2 justify-between">
           <div className="relative flex-1 max-w-sm">

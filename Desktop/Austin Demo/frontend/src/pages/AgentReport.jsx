@@ -62,10 +62,6 @@ function AgentReport() {
 
   return (
     <div className="agent-report-page">
-      <div className="page-header">
-        <h1>Agent Report</h1>
-      </div>
-
       <DateRangeFilter
         startDate={startDate}
         endDate={endDate}

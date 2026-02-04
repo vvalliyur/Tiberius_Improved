@@ -14,7 +14,7 @@ const CardHeader = React.forwardRef(({ className, children, ...props }, ref) => 
   return (
     <div
       ref={ref}
-      className={cn("flex items-center justify-between p-3", className)}
+      className={cn("flex items-center justify-between p-2.5", className)}
       {...props}
     >
       {children}
@@ -42,7 +42,7 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
 CardDescription.displayName = "CardDescription"
 
 const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-3 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 

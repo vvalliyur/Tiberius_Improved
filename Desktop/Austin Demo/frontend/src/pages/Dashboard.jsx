@@ -59,7 +59,6 @@ function Dashboard() {
       const value = info.getValue();
       return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
     }},
-    { accessorKey: 'comm_channel', header: 'Comm Channel' },
     { accessorKey: 'notes', header: 'Notes' },
   ], []);
 
@@ -104,20 +103,14 @@ function Dashboard() {
   };
 
   return (
-    <div className="w-full" data-page-container style={{ minHeight: '1000px' }}>
-      <div className="flex-shrink-0 mb-2">
-        <h1 className="text-4xl font-bold tracking-tight mb-0">Dashboard</h1>
-      </div>
+    <div className="w-full space-y-4" data-page-container style={{ minHeight: '1000px' }}>
+      {error && (
+        <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm w-full">
+          {error}
+        </div>
+      )}
 
-      <div className="min-h-[60px] flex items-center flex-shrink-0 mb-4">
-        {error && (
-          <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm w-full">
-            {error}
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3 flex-shrink-0 mb-6">
+      <div className="grid gap-4 md:grid-cols-3 flex-shrink-0">
         <Card className="h-[120px] flex flex-col">
           <CardHeader className="flex-1 flex flex-col justify-center">
             <CardDescription className="mb-2">Total Tips (All Time)</CardDescription>
@@ -146,31 +139,29 @@ function Dashboard() {
         </Card>
       </div>
 
-      {dashboardData.blocked_players?.length > 0 && (
-        <Card className="overflow-hidden flex-shrink-0 mt-6 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
-          <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
-            <CardTitle className="text-red-700 dark:text-red-300">Blocked Players</CardTitle>
-            <TableSearchBox
-              value={blockedPlayersSearch}
-              onChange={setBlockedPlayersSearch}
-            />
-          </CardHeader>
-          <CardContent className="p-6 flex-shrink-0">
-            <DataTable
-              data={dashboardData.blocked_players}
-              columns={blockedPlayersColumns}
-              isLoading={isLoading}
-              emptyMessage="No blocked players"
-              globalFilter={blockedPlayersSearch}
-              onGlobalFilterChange={setBlockedPlayersSearch}
-              hideSearch={true}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Card className="overflow-hidden flex-shrink-0 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
+        <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
+          <CardTitle className="text-red-700 dark:text-red-300">Blocked Players (Do Not Allow)</CardTitle>
+          <TableSearchBox
+            value={blockedPlayersSearch}
+            onChange={setBlockedPlayersSearch}
+          />
+        </CardHeader>
+        <CardContent className="flex-shrink-0">
+          <DataTable
+            data={dashboardData.blocked_players || []}
+            columns={blockedPlayersColumns}
+            isLoading={isLoading}
+            emptyMessage="No blocked players"
+            globalFilter={blockedPlayersSearch}
+            onGlobalFilterChange={setBlockedPlayersSearch}
+            hideSearch={true}
+          />
+        </CardContent>
+      </Card>
 
       {dashboardData.over_credit_limit_players?.length > 0 && (
-        <Card className="overflow-hidden flex-shrink-0 mt-6">
+        <Card className="overflow-hidden flex-shrink-0">
           <CardHeader className="bg-muted/30 border-b flex-shrink-0">
             <CardTitle>Players Over Credit Limit</CardTitle>
             <TableSearchBox
@@ -178,7 +169,7 @@ function Dashboard() {
               onChange={setOverCreditLimitSearch}
             />
           </CardHeader>
-          <CardContent className="p-6 flex-shrink-0">
+          <CardContent className="flex-shrink-0">
             <DataTable
               data={dashboardData.over_credit_limit_players}
               columns={overCreditLimitColumns}
@@ -192,7 +183,7 @@ function Dashboard() {
         </Card>
       )}
 
-      <Card className="overflow-hidden flex-shrink-0 mt-6">
+      <Card className="overflow-hidden flex-shrink-0">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
           <CardTitle>Agent Report</CardTitle>
           <TableSearchBox
@@ -200,7 +191,7 @@ function Dashboard() {
             onChange={setAgentReportSearch}
           />
         </CardHeader>
-        <CardContent className="p-6 flex-shrink-0">
+        <CardContent className="flex-shrink-0">
           <DataTable
             data={dashboardData.agent_report}
             columns={agentColumns}
@@ -213,7 +204,7 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden flex-shrink-0 mt-6">
+      <Card className="overflow-hidden flex-shrink-0">
         <CardHeader className="bg-muted/30 border-b flex-shrink-0">
           <CardTitle>Player Aggregates</CardTitle>
           <TableSearchBox
@@ -221,7 +212,7 @@ function Dashboard() {
             onChange={setPlayerAggregatesSearch}
           />
         </CardHeader>
-        <CardContent className="p-6 flex-shrink-0">
+        <CardContent className="flex-shrink-0">
           <DataTable
             data={dashboardData.player_aggregates}
             columns={playerColumns}

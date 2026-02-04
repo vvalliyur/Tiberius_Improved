@@ -94,12 +94,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-4 w-full">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Raw Data</h1>
-          <p className="text-lg text-muted-foreground">View game data and aggregated statistics</p>
-        </div>
-        <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+      <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
           <button
             className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
               activeTab === 'game-data'
@@ -121,7 +116,6 @@ function Dashboard() {
             Aggregated Data
           </button>
         </div>
-      </div>
 
       <DateRangeFilter
         startDate={startDate}
@@ -151,7 +145,7 @@ function Dashboard() {
             onChange={setSearchFilter}
           />
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent>
           <DataTable
             data={activeTab === 'game-data' ? gameData : aggregatedData}
             columns={activeTab === 'game-data' ? gameDataColumns : aggregatedDataColumns}

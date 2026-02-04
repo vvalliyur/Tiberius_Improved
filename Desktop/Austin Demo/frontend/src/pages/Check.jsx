@@ -40,13 +40,6 @@ function Check() {
 
   return (
     <div className="space-y-8 w-full">
-      <div className="space-y-2 h-[88px] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold tracking-tight">Data Quality Check</h1>
-        <p className="text-lg text-muted-foreground">
-          Review and fix data quality issues in your system
-        </p>
-      </div>
-
       {totalErrors === 0 && !errorsLoading && (
         <Card className="border-2 border-green-500/50">
           <CardContent className="p-8 text-center">
@@ -114,7 +107,7 @@ function Check() {
                   onChange={setMissingPlayersSearch}
                 />
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <DataTable
                   data={dataErrors.players_in_games_not_in_players.data}
                   columns={[
@@ -174,7 +167,7 @@ function Check() {
                   onChange={setUnmappedPlayersSearch}
                 />
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <DataTable
                   data={dataErrors.players_not_mapped_to_agents.data}
                   columns={[
@@ -237,7 +230,7 @@ function Check() {
                   onChange={setUnmappedAgentsSearch}
                 />
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <DataTable
                   data={dataErrors.agents_not_mapped_to_deal_rules.data}
                   columns={[

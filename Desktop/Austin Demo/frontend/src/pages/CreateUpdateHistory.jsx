@@ -99,12 +99,6 @@ function CreateUpdateHistory() {
 
   return (
     <div className="create-update-history-page">
-      <div className="page-header">
-        <h1>Create/Update History</h1>
-        <p className="page-description">
-          View audit logs of all create and update operations in the system
-        </p>
-      </div>
 
       <div className="filters-section">
         <DateRangeFilter
