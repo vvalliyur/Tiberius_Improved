@@ -74,15 +74,10 @@ function Check() {
           {dataErrors.players_in_games_not_in_players.count > 0 && (
             <Card className="overflow-hidden border-2 border-destructive/50">
               <CardHeader className="bg-destructive/10 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-destructive">
-                      Players in Games Not in Players Table ({dataErrors.players_in_games_not_in_players.count})
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      These player IDs exist in the games table but have not been created as players yet.
-                    </p>
-                  </div>
+                <CardTitle className="text-destructive">
+                  Players in Games Not in Players Table ({dataErrors.players_in_games_not_in_players.count})
+                </CardTitle>
+                <div className="flex items-center gap-2">
                   <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
@@ -96,16 +91,16 @@ function Check() {
                     )}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2 ml-4"
+                    className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Download CSV
                   </Button>
+                  <TableSearchBox
+                    value={missingPlayersSearch}
+                    onChange={setMissingPlayersSearch}
+                  />
                 </div>
-                <TableSearchBox
-                  value={missingPlayersSearch}
-                  onChange={setMissingPlayersSearch}
-                />
               </CardHeader>
               <CardContent>
                 <DataTable
@@ -134,15 +129,10 @@ function Check() {
           {dataErrors.players_not_mapped_to_agents.count > 0 && (
             <Card className="overflow-hidden border-2 border-yellow-500/50">
               <CardHeader className="bg-yellow-100 dark:bg-yellow-900/30 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-yellow-700 dark:text-yellow-300">
-                      Players Not Mapped to Agents ({dataErrors.players_not_mapped_to_agents.count})
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      These players exist but are not mapped to any agent (missing or invalid agent_id).
-                    </p>
-                  </div>
+                <CardTitle className="text-yellow-700 dark:text-yellow-300">
+                  Players Not Mapped to Agents ({dataErrors.players_not_mapped_to_agents.count})
+                </CardTitle>
+                <div className="flex items-center gap-2">
                   <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
@@ -156,16 +146,16 @@ function Check() {
                     )}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2 ml-4"
+                    className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Download CSV
                   </Button>
+                  <TableSearchBox
+                    value={unmappedPlayersSearch}
+                    onChange={setUnmappedPlayersSearch}
+                  />
                 </div>
-                <TableSearchBox
-                  value={unmappedPlayersSearch}
-                  onChange={setUnmappedPlayersSearch}
-                />
               </CardHeader>
               <CardContent>
                 <DataTable
@@ -197,15 +187,10 @@ function Check() {
           {dataErrors.agents_not_mapped_to_deal_rules.count > 0 && (
             <Card className="overflow-hidden border-2 border-orange-500/50">
               <CardHeader className="bg-orange-100 dark:bg-orange-900/30 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-orange-700 dark:text-orange-300">
-                      Agents Not Mapped to Deal Rules ({dataErrors.agents_not_mapped_to_deal_rules.count})
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      These agents do not have any deal_percent_rules configured.
-                    </p>
-                  </div>
+                <CardTitle className="text-orange-700 dark:text-orange-300">
+                  Agents Not Mapped to Deal Rules ({dataErrors.agents_not_mapped_to_deal_rules.count})
+                </CardTitle>
+                <div className="flex items-center gap-2">
                   <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
@@ -219,16 +204,16 @@ function Check() {
                     )}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2 ml-4"
+                    className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Download CSV
                   </Button>
+                  <TableSearchBox
+                    value={unmappedAgentsSearch}
+                    onChange={setUnmappedAgentsSearch}
+                  />
                 </div>
-                <TableSearchBox
-                  value={unmappedAgentsSearch}
-                  onChange={setUnmappedAgentsSearch}
-                />
               </CardHeader>
               <CardContent>
                 <DataTable
