@@ -8,6 +8,12 @@ import { ChevronDown, ChevronUp, Copy, Check, Send } from 'lucide-react';
 import './AgentReport.css';
 import './DetailedAgentReport.css';
 
+const formatDealPercent = (value) => {
+  const percent = Number(value) * 100;
+  const rounded = Math.round(percent * 100) / 100;
+  return rounded % 1 === 0 ? `${rounded}%` : rounded.toFixed(2).replace(/\.?0+$/, '') + '%';
+};
+
 function AgentReports() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -411,7 +417,7 @@ function AgentReports() {
                                   <td>{player.player_name}</td>
                                 </>
                               )}
-                              <td>{(player.deal_percent * 100).toFixed(2)}%</td>
+                              <td>{formatDealPercent(player.deal_percent)}</td>
                               <td>{player.total_hands.toLocaleString()}</td>
                               <td className="tips-cell">{player.total_tips.toFixed(2)}</td>
                               <td className="tips-cell">{player.agent_tips.toFixed(2)}</td>

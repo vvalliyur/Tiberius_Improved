@@ -4,6 +4,12 @@ import DateRangeFilter from '../components/DateRangeFilter';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import './DetailedAgentReport.css';
 
+const formatDealPercent = (value) => {
+  const percent = Number(value) * 100;
+  const rounded = Math.round(percent * 100) / 100;
+  return rounded % 1 === 0 ? `${rounded}%` : rounded.toFixed(2).replace(/\.?0+$/, '') + '%';
+};
+
 function DetailedAgentReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -376,7 +382,7 @@ function DetailedAgentReport() {
                                   <td>{player.player_name || ''}</td>
                                 </>
                               )}
-                              <td>{(dealPercent * 100).toFixed(2)}%</td>
+                              <td>{formatDealPercent(dealPercent)}</td>
                               <td>{typeof player.total_hands === 'number' ? player.total_hands.toLocaleString() : (player.total_hands || 0)}</td>
                               <td className="tips-cell">{totalTips.toFixed(2)}</td>
                               <td className="tips-cell">{agentTips.toFixed(2)}</td>
