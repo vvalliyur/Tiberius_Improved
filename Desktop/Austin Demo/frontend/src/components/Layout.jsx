@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,6 +12,7 @@ export default function Layout({ children, activePage, onPageChange }) {
   const userMenuButtonRef = useRef(null);
   const dropdownRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const [isPositionReady, setIsPositionReady] = useState(false);
 
   const updateDropdownPosition = () => {
     if (userMenuButtonRef.current) {
@@ -23,13 +24,26 @@ export default function Layout({ children, activePage, onPageChange }) {
         top: buttonRect.bottom + scrollY + 8,
         right: window.innerWidth - buttonRect.right - scrollX,
       });
+      return true;
     }
+    return false;
   };
 
-  useEffect(() => {
+  // Calculate position synchronously before paint to prevent flash
+  useLayoutEffect(() => {
     if (isUserMenuOpen) {
-      updateDropdownPosition();
-      
+      setIsPositionReady(false);
+      const positionCalculated = updateDropdownPosition();
+      if (positionCalculated) {
+        setIsPositionReady(true);
+      }
+    } else {
+      setIsPositionReady(false);
+    }
+  }, [isUserMenuOpen]);
+
+  useEffect(() => {
+    if (isUserMenuOpen && isPositionReady) {
       const handleScroll = () => updateDropdownPosition();
       const handleResize = () => updateDropdownPosition();
       
@@ -41,7 +55,7 @@ export default function Layout({ children, activePage, onPageChange }) {
         window.removeEventListener('resize', handleResize);
       };
     }
-  }, [isUserMenuOpen]);
+  }, [isUserMenuOpen, isPositionReady]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -201,13 +215,14 @@ export default function Layout({ children, activePage, onPageChange }) {
         {children}
       </main>
 
-      {isUserMenuOpen && createPortal(
+      {isUserMenuOpen && isPositionReady && createPortal(
         <div
           ref={dropdownRef}
           className="fixed bg-popover border rounded-xl shadow-elevated-lg z-[9999] min-w-[160px] overflow-hidden animate-in fade-in-0 zoom-in-95"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
+            visibility: isPositionReady ? 'visible' : 'hidden',
           }}
         >
           <div className="px-4 py-2 text-sm text-muted-foreground border-b">
