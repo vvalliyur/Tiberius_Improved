@@ -3,7 +3,7 @@ import { getData, getAggregatedData } from '../utils/api';
 import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardHeader } from '../components/ui/card';
 import { formatNumber } from '../utils/numberFormat';
 
 function Dashboard() {
@@ -94,30 +94,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="space-y-4 w-full">
-      <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
-          <button
-            className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'game-data'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-            onClick={() => setActiveTab('game-data')}
-          >
-            Game Data
-          </button>
-          <button
-            className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-              activeTab === 'aggregated'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-            onClick={() => setActiveTab('aggregated')}
-          >
-            Aggregated Data
-          </button>
-        </div>
-
+    <div className="space-y-3 w-full">
       <DateRangeFilter
         startDate={startDate}
         endDate={endDate}
@@ -138,9 +115,28 @@ function Dashboard() {
 
       <Card className="overflow-hidden">
         <CardHeader className="bg-muted/30 border-b">
-          <CardTitle>
-            {activeTab === 'game-data' ? 'Game Data' : 'Aggregated Data by Player'}
-          </CardTitle>
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+            <button
+              className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'game-data'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+              onClick={() => setActiveTab('game-data')}
+            >
+              Game Data
+            </button>
+            <button
+              className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'aggregated'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+              onClick={() => setActiveTab('aggregated')}
+            >
+              Aggregated Data
+            </button>
+          </div>
           <TableSearchBox
             value={searchFilter}
             onChange={setSearchFilter}
