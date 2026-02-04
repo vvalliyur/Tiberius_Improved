@@ -18,10 +18,18 @@ function DealRules() {
     deal_percent: '',
   });
 
+  const formatDealPercent = (value) => {
+    const percent = Number(value) * 100;
+    // Round to 2 decimal places, then remove trailing zeros
+    const rounded = Math.round(percent * 100) / 100;
+    // Format to remove unnecessary decimals
+    return rounded % 1 === 0 ? `${rounded}%` : rounded.toFixed(2).replace(/\.?0+$/, '') + '%';
+  };
+
   const columns = [
     { accessorKey: 'agent_name', header: 'Agent Name' },
     { accessorKey: 'threshold', header: 'Threshold', cell: info => `$${Number(info.getValue()).toFixed(2)}` },
-    { accessorKey: 'deal_percent', header: 'Deal %', cell: info => `${(Number(info.getValue()) * 100).toFixed(3)}%` },
+    { accessorKey: 'deal_percent', header: 'Deal %', cell: info => formatDealPercent(info.getValue()) },
     {
       accessorKey: 'actions',
       header: 'Actions',
