@@ -88,12 +88,14 @@ function DetailedAgentReport() {
               deal_percent: parseFloat(row.deal_percent || 0),
               players: [],
               total_hands: 0,
+              total_profit: 0,
               total_tips: 0,
               total_agent_tips: 0,
             };
           }
           
           const totalHands = parseInt(row.total_hands || 0) || 0;
+          const totalProfit = parseFloat(row.total_profit || 0) || 0;
           const totalTips = parseFloat(row.total_tips || 0) || 0;
           const agentTips = parseFloat(row.agent_tips || 0) || 0;
           
@@ -106,6 +108,7 @@ function DetailedAgentReport() {
               player_name: row.real_name,
               deal_percent: parseFloat(row.deal_percent || 0),
               total_hands: totalHands,
+              total_profit: totalProfit,
               total_tips: totalTips,
               agent_tips: agentTips,
               isRealName: true,
@@ -118,6 +121,7 @@ function DetailedAgentReport() {
               player_name: row.player_name || '',
               deal_percent: parseFloat(row.deal_percent || 0),
               total_hands: totalHands,
+              total_profit: totalProfit,
               total_tips: totalTips,
               agent_tips: agentTips,
               isRealName: false,
@@ -125,6 +129,7 @@ function DetailedAgentReport() {
           }
           
           acc[agentId].total_hands += totalHands;
+          acc[agentId].total_profit += totalProfit;
           acc[agentId].total_tips += totalTips;
           acc[agentId].total_agent_tips += agentTips;
         } catch (rowErr) {
@@ -170,22 +175,24 @@ function DetailedAgentReport() {
         return;
       }
       
-      // Compact format: Player ID, Player Name, Deal %, Total Tips, Agent Tips
+      // Compact format: Player ID, Player Name, Deal %, Total Profit, Total Tips, Agent Tips
       const rows = agent.players.map(player => {
         if (!player) return '';
         const dealPercent = typeof player.deal_percent === 'number' ? player.deal_percent : 0;
+        const totalProfit = typeof player.total_profit === 'number' ? player.total_profit : 0;
         const totalTips = typeof player.total_tips === 'number' ? player.total_tips : 0;
         const agentTips = typeof player.agent_tips === 'number' ? player.agent_tips : 0;
         if (groupBy === 'real_name') {
-          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
+          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalProfit)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
         } else {
-          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
+          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(dealPercent)}, ${formatNumber(totalProfit)}, ${formatNumber(totalTips)}, ${formatNumber(agentTips)}`;
         }
       }).filter(Boolean);
       
+      const totalProfit = typeof agent.total_profit === 'number' ? agent.total_profit : 0;
       const totalTips = typeof agent.total_tips === 'number' ? agent.total_tips : 0;
       const totalAgentTips = typeof agent.total_agent_tips === 'number' ? agent.total_agent_tips : 0;
-      const totalsRow = `Total, , , ${formatNumber(totalTips)}, ${formatNumber(totalAgentTips)}`;
+      const totalsRow = `Total, , , , ${formatNumber(totalProfit)}, ${formatNumber(totalTips)}, ${formatNumber(totalAgentTips)}`;
       
       const text = [...rows, totalsRow].join('\n');
       
@@ -267,6 +274,12 @@ function DetailedAgentReport() {
                     <div className="summary-item">
                       <span className="summary-label text-center">Players</span>
                       <span className="summary-value text-center">{players.length}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label text-center">Total Profit</span>
+                      <span className={`summary-value text-center ${agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}`}>
+                        {typeof agent.total_profit === 'number' ? formatNumber(agent.total_profit) : '0'}
+                      </span>
                     </div>
                     <div className="summary-item">
                       <span className="summary-label text-center">Total Tips</span>
@@ -357,7 +370,7 @@ function DetailedAgentReport() {
                             </>
                           )}
                           <th>Deal %</th>
-                          <th>Total Hands</th>
+                          <th className="tips-header">Total Profit</th>
                           <th className="tips-header">Total Tips</th>
                           <th className="tips-header">Agent Tips</th>
                         </tr>
@@ -368,6 +381,7 @@ function DetailedAgentReport() {
                         {players.map((player) => {
                           if (!player) return null;
                           const dealPercent = typeof player.deal_percent === 'number' ? player.deal_percent : 0;
+                          const totalProfit = typeof player.total_profit === 'number' ? player.total_profit : 0;
                           const totalTips = typeof player.total_tips === 'number' ? player.total_tips : 0;
                           const agentTips = typeof player.agent_tips === 'number' ? player.agent_tips : 0;
                           return (
@@ -384,7 +398,11 @@ function DetailedAgentReport() {
                                 </>
                               )}
                               <td>{formatDealPercent(dealPercent)}</td>
-                              <td>{typeof player.total_hands === 'number' ? player.total_hands.toLocaleString() : (player.total_hands || 0)}</td>
+                              <td className="tips-cell">
+                                <span className={totalProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                                  {formatNumber(totalProfit)}
+                                </span>
+                              </td>
                               <td className="tips-cell">{formatNumber(totalTips)}</td>
                               <td className="tips-cell">{formatNumber(agentTips)}</td>
                             </tr>
@@ -392,6 +410,11 @@ function DetailedAgentReport() {
                         })}
                         <tr className="totals-row">
                           <td colSpan="4" className="totals-label">Total</td>
+                          <td className="totals-value tips-cell">
+                            <span className={agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                              {typeof agent.total_profit === 'number' ? formatNumber(agent.total_profit) : '0'}
+                            </span>
+                          </td>
                           <td className="totals-value tips-cell">{typeof agent.total_tips === 'number' ? formatNumber(agent.total_tips) : '0'}</td>
                           <td className="totals-value tips-cell">{typeof agent.total_agent_tips === 'number' ? formatNumber(agent.total_agent_tips) : '0'}</td>
                         </tr>

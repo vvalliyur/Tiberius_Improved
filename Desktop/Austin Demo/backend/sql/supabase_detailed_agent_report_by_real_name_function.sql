@@ -2,6 +2,9 @@
 -- This groups players by their real_name from the real_name_mapping table
 -- Players without a real_name mapping will be grouped by their player_id
 
+-- Drop the existing function first if it exists (required when changing return type)
+DROP FUNCTION IF EXISTS get_detailed_agent_report_by_real_name(TIMESTAMP WITH TIME ZONE, TIMESTAMP WITH TIME ZONE);
+
 CREATE OR REPLACE FUNCTION get_detailed_agent_report_by_real_name(
     start_date_param TIMESTAMP WITH TIME ZONE,
     end_date_param TIMESTAMP WITH TIME ZONE
@@ -13,6 +16,7 @@ RETURNS TABLE (
     real_name VARCHAR(255),
     player_ids TEXT, -- Comma-separated list of player IDs for this real name
     total_hands BIGINT,
+    total_profit DECIMAL(10, 2),
     total_tips DECIMAL(10, 2),
     agent_tips DECIMAL(10, 2)
 ) AS $$
@@ -28,6 +32,7 @@ BEGIN
             g.player_id,
             -- Sum the actual hands column from each game, not count games
             COALESCE(SUM(COALESCE(g.hands, 0)), 0)::BIGINT AS total_hands,
+            COALESCE(SUM(g.profit), 0)::DECIMAL(10, 2) AS total_profit,
             COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips
         FROM agents a
         INNER JOIN players p ON a.agent_id = p.agent_id
@@ -72,6 +77,7 @@ BEGIN
         pd.real_name::VARCHAR(255) AS real_name,
         STRING_AGG(DISTINCT pd.player_id, ', ' ORDER BY pd.player_id)::TEXT AS player_ids,
         SUM(pd.total_hands)::BIGINT AS total_hands,
+        SUM(pd.total_profit)::DECIMAL(10, 2) AS total_profit,
         SUM(pd.total_tips)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips using the deal_percent based on total tips for the real_name group
         SUM(pd.total_tips)::DECIMAL(10, 2) * rndp.deal_percent::DECIMAL(10, 3) AS agent_tips

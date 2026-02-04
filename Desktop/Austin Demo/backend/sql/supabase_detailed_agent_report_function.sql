@@ -16,6 +16,7 @@ RETURNS TABLE (
     player_id VARCHAR(255),
     player_name VARCHAR(255),
     total_hands BIGINT,
+    total_profit DECIMAL(10, 2),
     total_tips DECIMAL(10, 2),
     agent_tips DECIMAL(10, 2)
 ) AS $$
@@ -61,6 +62,7 @@ BEGIN
         p.player_name::VARCHAR(255),
         -- Sum the actual hands column from each game, not count games
         COALESCE(SUM(COALESCE(g.hands, 0)), 0)::BIGINT AS total_hands,
+        COALESCE(SUM(g.profit), 0)::DECIMAL(10, 2) AS total_profit,
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips using the deal_percent based on total tips (not per-game)
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) * pdp.deal_percent::DECIMAL(10, 3) AS agent_tips
