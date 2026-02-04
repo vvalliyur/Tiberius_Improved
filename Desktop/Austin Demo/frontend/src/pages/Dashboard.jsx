@@ -77,12 +77,9 @@ function Dashboard() {
     }},
     { accessorKey: 'adjusted_credit_limit', header: 'Adjusted Credit Limit', cell: info => {
       const value = info.getValue();
-      return value !== null && value !== undefined ? Number(value).toFixed(2) : 'N/A';
+      return value !== null && value !== undefined ? formatNumber(value) : 'N/A';
     }},
-    { accessorKey: 'period_profit', header: 'Profit Since Start of Week', cell: info => {
-      const value = Number(info.getValue());
-      return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
-    }},
+    { accessorKey: 'period_profit', header: 'Profit Since Start of Week', cell: info => formatNumber(info.getValue()) },
   ], []);
 
   const agentColumns = useMemo(() => [
@@ -96,12 +93,6 @@ function Dashboard() {
     { accessorKey: 'agent_tips', header: 'Agent Tips', cell: info => formatNumber(info.getValue()) },
   ], []);
 
-  const getRowClassName = (row) => {
-    if (row.original.is_below_credit) {
-      return 'bg-red-100 dark:bg-red-900/20';
-    }
-    return '';
-  };
 
   return (
     <div className="w-full space-y-4" data-page-container style={{ minHeight: '1000px' }}>
@@ -140,24 +131,26 @@ function Dashboard() {
         </Card>
       </div>
 
-      <Card className="overflow-hidden flex-shrink-0 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
-        <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
-          <CardTitle className="text-red-700 dark:text-red-300">Blocked Players (Do Not Allow)</CardTitle>
-          <TableSearchBox
-            value={blockedPlayersSearch}
-            onChange={setBlockedPlayersSearch}
+      {dashboardData.blocked_players?.length > 0 && (
+        <Card className="overflow-hidden flex-shrink-0 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
+          <CardHeader className="bg-red-100 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700 flex-shrink-0">
+            <CardTitle className="text-red-700 dark:text-red-300">Blocked Players (Do Not Allow)</CardTitle>
+            <TableSearchBox
+              value={blockedPlayersSearch}
+              onChange={setBlockedPlayersSearch}
+            />
+          </CardHeader>
+          <DataTable
+            data={dashboardData.blocked_players || []}
+            columns={blockedPlayersColumns}
+            isLoading={isLoading}
+            emptyMessage="No blocked players"
+            globalFilter={blockedPlayersSearch}
+            onGlobalFilterChange={setBlockedPlayersSearch}
+            hideSearch={true}
           />
-        </CardHeader>
-        <DataTable
-          data={dashboardData.blocked_players || []}
-          columns={blockedPlayersColumns}
-          isLoading={isLoading}
-          emptyMessage="No blocked players"
-          globalFilter={blockedPlayersSearch}
-          onGlobalFilterChange={setBlockedPlayersSearch}
-          hideSearch={true}
-        />
-      </Card>
+        </Card>
+      )}
 
       {dashboardData.over_credit_limit_players?.length > 0 && (
         <Card className="overflow-hidden flex-shrink-0">
@@ -212,7 +205,6 @@ function Dashboard() {
           columns={playerColumns}
           isLoading={isLoading}
           emptyMessage="No player data available"
-          getRowClassName={getRowClassName}
           globalFilter={playerAggregatesSearch}
           onGlobalFilterChange={setPlayerAggregatesSearch}
           hideSearch={true}

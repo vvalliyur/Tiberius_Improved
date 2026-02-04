@@ -149,11 +149,11 @@ function History() {
   const selectedCount = selectedPlayerIds.length;
 
   return (
-    <div className="space-y-8 w-full" data-page-container>
-      <div className="flex gap-6" style={{ minHeight: '600px', height: 'calc(100vh - 280px)' }}>
+    <div className="w-full h-full" data-page-container style={{ height: 'calc(100vh - 100px)' }}>
+      <div className="flex gap-6 h-full">
         <div className="w-80 flex-shrink-0" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
-          <Card className="h-full flex flex-col shadow-elevated" style={{ height: '100%' }}>
-            <CardHeader className="bg-muted/30 border-b">
+          <Card className="h-full flex flex-col shadow-elevated">
+            <CardHeader className="bg-muted/30 border-b flex-shrink-0">
               <div className="flex items-center justify-between gap-4">
                 <CardTitle className="text-lg">Players</CardTitle>
                 <Button
@@ -241,76 +241,80 @@ function History() {
           </Card>
         </div>
 
-        <div ref={mainContentRef} className="flex-1 overflow-y-auto space-y-6 custom-scrollbar min-h-0" style={{ minHeight: '600px' }}>
-          <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            lookbackDays={lookbackDays}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            onLookbackDaysChange={setLookbackDays}
-            onFetch={handleFetch}
-            isLoading={isLoading}
-            showClubCode={false}
-          />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-shrink-0 space-y-4 pb-4">
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              lookbackDays={lookbackDays}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              onLookbackDaysChange={setLookbackDays}
+              onFetch={handleFetch}
+              isLoading={isLoading}
+              showClubCode={false}
+            />
 
-          {error && (
-            <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
+                {error}
+              </div>
+            )}
+          </div>
 
-          {aggregatedData.length > 0 && (
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-muted/30 border-b">
-                <CardTitle>Aggregated Statistics</CardTitle>
-                <TableSearchBox
-                  value={aggregatedSearch}
-                  onChange={setAggregatedSearch}
+          <div ref={mainContentRef} className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
+            {aggregatedData.length > 0 && (
+              <Card className="overflow-visible">
+                <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+                  <CardTitle>Aggregated Statistics</CardTitle>
+                  <TableSearchBox
+                    value={aggregatedSearch}
+                    onChange={setAggregatedSearch}
+                  />
+                </CardHeader>
+                <DataTable
+                  data={aggregatedData}
+                  columns={aggregatedColumns}
+                  isLoading={isLoading}
+                  emptyMessage="No aggregated data available"
+                  globalFilter={aggregatedSearch}
+                  onGlobalFilterChange={setAggregatedSearch}
+                  hideSearch={true}
                 />
-              </CardHeader>
-              <DataTable
-                data={aggregatedData}
-                columns={aggregatedColumns}
-                isLoading={isLoading}
-                emptyMessage="No aggregated data available"
-                globalFilter={aggregatedSearch}
-                onGlobalFilterChange={setAggregatedSearch}
-                hideSearch={true}
-              />
-            </Card>
-          )}
+              </Card>
+            )}
 
-          {individualRecords.length > 0 && (
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-muted/30 border-b">
-                <CardTitle>Individual Records</CardTitle>
-                <TableSearchBox
-                  value={individualSearch}
-                  onChange={setIndividualSearch}
+            {individualRecords.length > 0 && (
+              <Card className="overflow-visible">
+                <CardHeader className="bg-muted/30 border-b flex-shrink-0">
+                  <CardTitle>Individual Records</CardTitle>
+                  <TableSearchBox
+                    value={individualSearch}
+                    onChange={setIndividualSearch}
+                  />
+                </CardHeader>
+                <DataTable
+                  data={individualRecords}
+                  columns={individualColumns}
+                  isLoading={isLoading}
+                  emptyMessage="No individual records available"
+                  globalFilter={individualSearch}
+                  onGlobalFilterChange={setIndividualSearch}
+                  hideSearch={true}
                 />
-              </CardHeader>
-              <DataTable
-                data={individualRecords}
-                columns={individualColumns}
-                isLoading={isLoading}
-                emptyMessage="No individual records available"
-                globalFilter={individualSearch}
-                onGlobalFilterChange={setIndividualSearch}
-                hideSearch={true}
-              />
-            </Card>
-          )}
+              </Card>
+            )}
 
-          {!isLoading && aggregatedData.length === 0 && individualRecords.length === 0 && selectedPlayerIds.length > 0 && (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  No data available for selected players. Click "Fetch Data" to load history
-                </div>
-              </CardContent>
-            </Card>
-          )}
+            {!isLoading && aggregatedData.length === 0 && individualRecords.length === 0 && selectedPlayerIds.length > 0 && (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">
+                    No data available for selected players. Click "Fetch Data" to load history
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

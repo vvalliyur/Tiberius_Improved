@@ -65,7 +65,8 @@ BEGIN
                    AND r.threshold <= rnt.total_tips_for_real_name
                  ORDER BY r.threshold DESC
                  LIMIT 1),
-                a.deal_percent
+                a.deal_percent,
+                0
             ) AS deal_percent
         FROM real_name_totals rnt
         INNER JOIN agents a ON a.agent_id = rnt.rnt_agent_id
@@ -73,14 +74,14 @@ BEGIN
     SELECT 
         pd.agent_id::INTEGER AS agent_id,
         pd.agent_name::VARCHAR(255) AS agent_name,
-        rndp.deal_percent::DECIMAL(10, 3) AS deal_percent,
+        COALESCE(rndp.deal_percent, 0)::DECIMAL(10, 3) AS deal_percent,
         pd.real_name::VARCHAR(255) AS real_name,
         STRING_AGG(DISTINCT pd.player_id, ', ' ORDER BY pd.player_id)::TEXT AS player_ids,
         SUM(pd.total_hands)::BIGINT AS total_hands,
         SUM(pd.total_profit)::DECIMAL(10, 2) AS total_profit,
         SUM(pd.total_tips)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips using the deal_percent based on total tips for the real_name group
-        SUM(pd.total_tips)::DECIMAL(10, 2) * rndp.deal_percent::DECIMAL(10, 3) AS agent_tips
+        SUM(pd.total_tips)::DECIMAL(10, 2) * COALESCE(rndp.deal_percent, 0)::DECIMAL(10, 3) AS agent_tips
     FROM player_data pd
     INNER JOIN real_name_totals rnt ON rnt.rnt_agent_id = pd.agent_id AND rnt.rnt_real_name = pd.real_name
     INNER JOIN real_name_deal_percents rndp ON rndp.agent_id = pd.agent_id AND rndp.real_name = pd.real_name

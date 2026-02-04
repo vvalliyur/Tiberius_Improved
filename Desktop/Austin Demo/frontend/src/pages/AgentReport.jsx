@@ -22,7 +22,7 @@ function AgentReport() {
       cell: info => {
         const value = Number(info.getValue());
         return (
-          <span className={value >= 0 ? 'profit-positive' : 'profit-negative'}>
+          <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
             {formatNumber(value)}
           </span>
         );

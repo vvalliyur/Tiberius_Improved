@@ -329,6 +329,5 @@ if __name__ == '__main__':
         app_password=GMAIL_APP_PASSWORD,
         dry_run=False
     )
-    
-    import json
+    print(result)
     # Result returned silently

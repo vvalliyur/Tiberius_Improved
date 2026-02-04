@@ -49,7 +49,8 @@ BEGIN
                    AND r.threshold <= pt.total_tips
                  ORDER BY r.threshold DESC
                  LIMIT 1),
-                a.deal_percent
+                a.deal_percent,
+                0
             ) AS deal_percent
         FROM player_totals pt
         INNER JOIN agents a ON a.agent_id = pt.agent_id
@@ -57,7 +58,7 @@ BEGIN
     SELECT 
         a.agent_id::INTEGER,
         a.agent_name::VARCHAR(255),
-        pdp.deal_percent::DECIMAL(10, 3) AS deal_percent,
+        COALESCE(pdp.deal_percent, 0)::DECIMAL(10, 3) AS deal_percent,
         g.player_id::VARCHAR(255),
         p.player_name::VARCHAR(255),
         -- Sum the actual hands column from each game, not count games
@@ -65,7 +66,7 @@ BEGIN
         COALESCE(SUM(g.profit), 0)::DECIMAL(10, 2) AS total_profit,
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) AS total_tips,
         -- Calculate agent_tips using the deal_percent based on total tips (not per-game)
-        COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) * pdp.deal_percent::DECIMAL(10, 3) AS agent_tips
+        COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) * COALESCE(pdp.deal_percent, 0)::DECIMAL(10, 3) AS agent_tips
     FROM agents a
     INNER JOIN players p ON a.agent_id = p.agent_id
     INNER JOIN games g ON g.player_id = p.player_id::TEXT

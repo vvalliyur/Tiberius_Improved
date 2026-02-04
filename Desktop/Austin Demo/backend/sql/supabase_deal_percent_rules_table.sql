@@ -19,6 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_deal_percent_rules_agent_player ON agent_deal_per
 CREATE INDEX IF NOT EXISTS idx_deal_percent_rules_threshold ON agent_deal_percent_rules(agent_id, threshold DESC);
 
 -- Create trigger to auto-update updated_at
+DROP TRIGGER IF EXISTS update_deal_percent_rules_updated_at ON agent_deal_percent_rules;
 CREATE TRIGGER update_deal_percent_rules_updated_at 
     BEFORE UPDATE ON agent_deal_percent_rules
     FOR EACH ROW 
@@ -44,12 +45,17 @@ BEGIN
     
     -- If still no rule found, return the default deal_percent from agents table
     IF v_deal_percent IS NULL THEN
-        SELECT deal_percent INTO v_deal_percent
+        SELECT COALESCE(deal_percent, 0) INTO v_deal_percent
         FROM agents
         WHERE agent_id = p_agent_id;
+        
+        -- If agent not found or deal_percent is still NULL, return 0
+        IF v_deal_percent IS NULL THEN
+            v_deal_percent := 0;
+        END IF;
     END IF;
     
-    RETURN COALESCE(v_deal_percent, 0);
+    RETURN v_deal_percent;
 END;
 $$ LANGUAGE plpgsql STABLE;
 

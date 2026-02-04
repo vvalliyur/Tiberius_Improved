@@ -45,9 +45,40 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def format_agent_report_message(agent_data, detailed_data, period_label):
-    """Format agent report data into a readable Telegram message."""
-    if not agent_data or not detailed_data:
+def format_number(value):
+    """Format number to 2 decimal places only if required (matches frontend formatNumber)."""
+    if value is None:
+        return '0'
+    try:
+        num = float(value)
+        rounded = round(num * 100) / 100
+        if rounded % 1 == 0:
+            return str(int(rounded))
+        return f"{rounded:.2f}".rstrip('0').rstrip('.')
+    except (ValueError, TypeError):
+        return '0'
+
+def format_deal_percent(value):
+    """Format deal percent as percentage."""
+    if value is None:
+        return '0%'
+    try:
+        percent = float(value) * 100
+        rounded = round(percent * 100) / 100
+        if rounded % 1 == 0:
+            return f"{int(rounded)}%"
+        return f"{rounded:.2f}%".rstrip('0').rstrip('.') + '%'
+    except (ValueError, TypeError):
+        return '0%'
+
+def pad_string(s, width):
+    """Pad string to specified width."""
+    s = str(s) if s is not None else ''
+    return s.ljust(width)[:width]
+
+def format_agent_report_message(agent_data, detailed_data, period_label, start_date=None, end_date=None):
+    """Format agent report data into a readable Telegram message with table format."""
+    if not agent_data:
         return f"No data available for {period_label}."
     
     # Get agent info from aggregated data
@@ -57,34 +88,88 @@ def format_agent_report_message(agent_data, detailed_data, period_label):
     total_tips = agent_info.get('total_tips', 0)
     agent_tips = agent_info.get('agent_tips', 0)
     
-    # Format message
-    message = f"<b>{agent_name} - {period_label} Report</b>\n\n"
-    message += f"<b>Summary:</b>\n"
-    message += f"Total Profit: ${total_profit:.2f}\n"
-    message += f"Total Tips: ${total_tips:.2f}\n"
-    message += f"Agent Tips: ${agent_tips:.2f}\n\n"
+    # Headers
+    headers = ['Player ID', 'Name', 'Deal%', 'Profit', 'Tips', 'Agent']
     
+    # Calculate column widths
+    col_widths = [len(h) for h in headers]
+    
+    # Process detailed data if available
     if detailed_data:
-        message += "<b>Player Details:</b>\n"
-        message += "Player ID | Deal % | Total Tips | Agent Tips\n"
-        message += "─" * 50 + "\n"
-        
-        for player in detailed_data[:20]:  # Limit to 20 players to avoid message length limits
-            player_id = player.get('player_id', 'N/A')
-            player_name = player.get('player_name', '')
-            deal_percent = player.get('deal_percent', 0) * 100
-            player_total_tips = player.get('total_tips', 0)
-            player_agent_tips = player.get('agent_tips', 0)
+        for player in detailed_data[:20]:  # Limit to 20 players
+            player_id = str(player.get('player_id', 'N/A'))
+            player_name = str(player.get('player_name', ''))
+            deal_percent = format_deal_percent(player.get('deal_percent', 0))
+            profit = format_number(player.get('total_profit', 0))
+            tips = format_number(player.get('total_tips', 0))
+            agent_tips_val = format_number(player.get('agent_tips', 0))
             
-            display_name = f"{player_id}"
-            if player_name:
-                display_name += f" ({player_name})"
+            values = [player_id, player_name, deal_percent, profit, tips, agent_tips_val]
+            for i, val in enumerate(values):
+                if len(val) > col_widths[i]:
+                    col_widths[i] = len(val)
+    
+    # Add totals row to width calculation
+    totals = ['TOTAL', '', '', format_number(total_profit), format_number(total_tips), format_number(agent_tips)]
+    for i, val in enumerate(totals):
+        if len(val) > col_widths[i]:
+            col_widths[i] = len(val)
+    
+    # Ensure minimum width
+    col_widths = [max(w, 6) for w in col_widths]
+    
+    # Create header row
+    header_row = ' | '.join(pad_string(h, col_widths[i]) for i, h in enumerate(headers))
+    
+    # Create table rows
+    table_rows = []
+    if detailed_data:
+        for player in detailed_data[:20]:  # Limit to 20 players
+            player_id = str(player.get('player_id', 'N/A'))
+            player_name = str(player.get('player_name', ''))
+            deal_percent = format_deal_percent(player.get('deal_percent', 0))
+            profit = format_number(player.get('total_profit', 0))
+            tips = format_number(player.get('total_tips', 0))
+            agent_tips_val = format_number(player.get('agent_tips', 0))
             
-            message += f"{display_name}\n"
-            message += f"  Deal: {deal_percent:.2f}% | Tips: ${player_total_tips:.2f} | Agent: ${player_agent_tips:.2f}\n"
-        
-        if len(detailed_data) > 20:
-            message += f"\n... and {len(detailed_data) - 20} more players"
+            values = [player_id, player_name, deal_percent, profit, tips, agent_tips_val]
+            row = ' | '.join(pad_string(v, col_widths[i]) for i, v in enumerate(values))
+            table_rows.append(row)
+    
+    # Create totals row
+    totals_row = ' | '.join(pad_string(totals[i], col_widths[i]) for i in range(len(headers)))
+    
+    # Combine table
+    if table_rows:
+        table = f"{header_row}\n" + "\n".join(table_rows) + f"\n{totals_row}"
+    else:
+        # If no detailed data, just show totals
+        table = f"{header_row}\n{totals_row}"
+    
+    # Format date range
+    if start_date and end_date:
+        try:
+            if isinstance(start_date, datetime):
+                start_str = start_date.strftime('%b %d, %Y')
+            else:
+                start_str = datetime.fromisoformat(str(start_date).replace('Z', '+00:00')).strftime('%b %d, %Y')
+            
+            if isinstance(end_date, datetime):
+                end_str = end_date.strftime('%b %d, %Y')
+            else:
+                end_str = datetime.fromisoformat(str(end_date).replace('Z', '+00:00')).strftime('%b %d, %Y')
+            
+            date_range = f"Period: {start_str} to {end_str}"
+        except:
+            date_range = f"Period: {period_label}"
+    else:
+        date_range = f"Period: {period_label}"
+    
+    # Format message as HTML
+    message = f"<b>{agent_name} - {period_label} Report</b>\n{date_range}\n\n<pre>{table}</pre>"
+    
+    if len(detailed_data) > 20:
+        message += f"\n\n... and {len(detailed_data) - 20} more players"
     
     return message
 
@@ -147,7 +232,7 @@ async def get_agent_report_for_period(update: Update, start_date: datetime, end_
         
         # Format and send response
         if agent_aggregated_data or agent_detailed_data:
-            message = format_agent_report_message(agent_aggregated_data, agent_detailed_data, period_label)
+            message = format_agent_report_message(agent_aggregated_data, agent_detailed_data, period_label, start_date, end_date)
             await processing_msg.edit_text(message, parse_mode='HTML')
         else:
             await processing_msg.edit_text(f"No data available for {period_label}.")

@@ -43,7 +43,7 @@ function AgentReports() {
         const value = Number(info.getValue());
         return (
           <div className="text-center">
-            <span className={value >= 0 ? 'profit-positive' : 'profit-negative'}>
+            <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
               {formatNumber(value)}
             </span>
           </div>
@@ -198,22 +198,90 @@ function AgentReports() {
 
   const sendToTelegram = async (agent) => {
     try {
-      // Format the message similar to clipboard copy
-      const rows = agent.players.map(player => {
-        if (groupBy === 'real_name') {
-          return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
-        } else {
-          return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+      // Format as compact markdown table
+      const headers = groupBy === 'real_name' 
+        ? ['Real Name', 'IDs', 'Deal%', 'Profit', 'Tips', 'Agent']
+        : ['Player ID', 'Name', 'Deal%', 'Profit', 'Tips', 'Agent'];
+      
+      // Helper to pad strings for alignment
+      const pad = (str, width) => String(str || '').padEnd(width, ' ').substring(0, width);
+      
+      // Calculate column widths
+      const colWidths = headers.map((h, i) => {
+        let maxWidth = h.length;
+        agent.players.forEach(player => {
+          const playerId = groupBy === 'real_name' ? (player.player_name || '') : (player.player_id || '');
+          const playerName = groupBy === 'real_name' ? (player.player_ids || '') : (player.player_name || '');
+          const values = [
+            playerId,
+            playerName,
+            formatDealPercent(player.deal_percent),
+            formatNumber(player.total_profit || 0),
+            formatNumber(player.total_tips),
+            formatNumber(player.agent_tips)
+          ];
+          if (values[i] && values[i].length > maxWidth) {
+            maxWidth = values[i].length;
+          }
+        });
+        // Add totals row
+        const totals = [
+          'Total',
+          '',
+          '',
+          formatNumber(agent.total_profit || 0),
+          formatNumber(agent.total_tips),
+          formatNumber(agent.total_agent_tips)
+        ];
+        if (totals[i] && totals[i].length > maxWidth) {
+          maxWidth = totals[i].length;
         }
+        return Math.max(maxWidth, 6); // Minimum width of 6
       });
       
-      const totalsRow = `Total, , , , ${formatNumber(agent.total_profit || 0)}, ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
+      // Create header row
+      const headerRow = headers.map((h, i) => pad(h, colWidths[i])).join(' | ');
       
-      const header = groupBy === 'real_name' 
-        ? `Real Name, Player IDs, Deal %, Total Profit, Total Tips, Agent Tips`
-        : `Player ID, Player Name, Deal %, Total Profit, Total Tips, Agent Tips`;
+      // Create table rows
+      const tableRows = agent.players.map(player => {
+        const playerId = groupBy === 'real_name' ? (player.player_name || '') : (player.player_id || '');
+        const playerName = groupBy === 'real_name' ? (player.player_ids || '') : (player.player_name || '');
+        const dealPercent = formatDealPercent(player.deal_percent);
+        const profit = formatNumber(player.total_profit || 0);
+        const tips = formatNumber(player.total_tips);
+        const agentTips = formatNumber(player.agent_tips);
+        
+        const values = [playerId, playerName, dealPercent, profit, tips, agentTips];
+        return values.map((v, i) => pad(v, colWidths[i])).join(' | ');
+      });
       
-      const message = `<b>${agent.agent_name} - Agent Report</b>\n\n${header}\n${rows.join('\n')}\n${totalsRow}`;
+      // Create totals row - cleaner format
+      const totalsRow = [
+        pad('TOTAL', colWidths[0]),
+        pad('', colWidths[1]),
+        pad('', colWidths[2]),
+        pad(formatNumber(agent.total_profit || 0), colWidths[3]),
+        pad(formatNumber(agent.total_tips), colWidths[4]),
+        pad(formatNumber(agent.total_agent_tips), colWidths[5])
+      ].join(' | ');
+      
+      // Combine into table (no separators)
+      const table = `${headerRow}\n${tableRows.join('\n')}\n${totalsRow}`;
+      
+      // Format date range
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      };
+      
+      const dateRange = startDate && endDate 
+        ? `${formatDate(startDate)} to ${formatDate(endDate)}`
+        : 'Date range not specified';
+      
+      // Format message as HTML (since backend uses HTML parse_mode)
+      // Use <pre> tag for monospace table formatting
+      const message = `<b>${agent.agent_name} - Agent Report</b>\nPeriod: ${dateRange}\n\n<pre>${table}</pre>`;
       
       await sendTelegramMessage(agent.agent_id, message);
       setSentTelegramAgentId(agent.agent_id);
@@ -274,7 +342,7 @@ function AgentReports() {
                       <tr className="border-b-0 bg-muted/30 font-semibold">
                         <td className="p-4 text-center">Total:</td>
                         <td className="p-4 text-center">
-                          <span className={totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}>
+                          <span className={totalProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                             {formatNumber(totalProfit)}
                           </span>
                         </td>
