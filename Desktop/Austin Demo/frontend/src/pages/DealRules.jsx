@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAgents, getDealRules, upsertDealRule } from '../utils/api';
 import DataTable from '../components/DataTable';
+import Drawer from '../components/Drawer';
 import './Agents.css';
 
 function DealRules() {
@@ -19,7 +20,6 @@ function DealRules() {
 
   const columns = [
     { accessorKey: 'agent_name', header: 'Agent Name' },
-    { accessorKey: 'agent_id', header: 'Agent ID' },
     { accessorKey: 'threshold', header: 'Threshold', cell: info => `$${Number(info.getValue()).toFixed(2)}` },
     { accessorKey: 'deal_percent', header: 'Deal %', cell: info => `${(Number(info.getValue()) * 100).toFixed(3)}%` },
     {
@@ -119,22 +119,12 @@ function DealRules() {
     <div className="agents-page">
       {error && <div className="error-message">{error}</div>}
 
-      {isFormOpen && (
-        <div className="form-overlay">
-          <div className="form-container">
-            <h2>{isUpdateMode ? 'Update Deal Rule' : 'Create Deal Rule'}</h2>
-            <form onSubmit={handleSubmit}>
-              {isUpdateMode && (
-                <div className="form-group">
-                  <label>ID</label>
-                  <input
-                    type="text"
-                    value={formData.id || ''}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-              )}
+      <Drawer
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        title={isUpdateMode ? 'Update Deal Rule' : 'Create Deal Rule'}
+      >
+        <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Agent *</label>
                 <select
@@ -188,9 +178,7 @@ function DealRules() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Drawer>
 
       <DataTable
         data={dealRules}

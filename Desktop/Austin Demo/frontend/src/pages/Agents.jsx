@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAgents, upsertAgent } from '../utils/api';
 import DataTable from '../components/DataTable';
+import Drawer from '../components/Drawer';
 import './Agents.css';
 
 function Agents() {
@@ -12,7 +13,6 @@ function Agents() {
   const [formData, setFormData] = useState({
     agent_id: null,
     agent_name: '',
-    deal_percent: '',
     comm_channel: '',
     notes: '',
     payment_methods: '',
@@ -21,7 +21,6 @@ function Agents() {
   const columns = [
     { accessorKey: 'agent_id', header: 'Agent ID' },
     { accessorKey: 'agent_name', header: 'Agent Name' },
-    { accessorKey: 'deal_percent', header: 'Deal %', cell: info => `${(Number(info.getValue()) * 100).toFixed(2)}%` },
     { accessorKey: 'comm_channel', header: 'Comm Channel' },
     { accessorKey: 'notes', header: 'Notes' },
     { accessorKey: 'payment_methods', header: 'Payment Methods' },
@@ -60,7 +59,6 @@ function Agents() {
     setFormData({
       agent_id: agent.agent_id,
       agent_name: agent.agent_name || '',
-      deal_percent: agent.deal_percent || '',
       comm_channel: agent.comm_channel || '',
       notes: agent.notes || '',
       payment_methods: agent.payment_methods || '',
@@ -78,7 +76,6 @@ function Agents() {
       const submitData = {
         agent_id: isUpdateMode ? formData.agent_id : null,
         agent_name: formData.agent_name,
-        deal_percent: parseFloat(formData.deal_percent),
         comm_channel: formData.comm_channel || null,
         notes: formData.notes || null,
         payment_methods: formData.payment_methods || null,
@@ -100,7 +97,6 @@ function Agents() {
     setFormData({
       agent_id: null,
       agent_name: '',
-      deal_percent: '',
       comm_channel: '',
       notes: '',
       payment_methods: '',
@@ -118,11 +114,12 @@ function Agents() {
     <div className="agents-page">
       {error && <div className="error-message">{error}</div>}
 
-      {isFormOpen && (
-        <div className="form-overlay">
-          <div className="form-container">
-            <h2>{isUpdateMode ? 'Update Agent' : 'Create Agent'}</h2>
-            <form onSubmit={handleSubmit}>
+      <Drawer
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        title={isUpdateMode ? 'Update Agent' : 'Create Agent'}
+      >
+        <form onSubmit={handleSubmit}>
               {isUpdateMode && (
                 <div className="form-group">
                   <label>Agent ID</label>
@@ -141,17 +138,6 @@ function Agents() {
                   name="agent_name"
                   value={formData.agent_name}
                   onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Deal % *</label>
-                <input
-                  type="number"
-                  name="deal_percent"
-                  value={formData.deal_percent}
-                  onChange={handleChange}
-                  step="0.001"
                   required
                 />
               </div>
@@ -191,9 +177,7 @@ function Agents() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Drawer>
 
       <DataTable
         data={agents}

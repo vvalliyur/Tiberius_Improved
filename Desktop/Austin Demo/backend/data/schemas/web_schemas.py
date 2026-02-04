@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class UpsertAgentRequest(BaseModel):
     agent_id: int | None = None
     agent_name: str
-    deal_percent: float
+    deal_percent: float | None = None  # Optional, defaults to 0.0 on backend
     comm_channel: str | None = None
     notes: str | None = None
     payment_methods: str | None = None

@@ -522,12 +522,12 @@ async def upsert_agent(agent_data: UpsertAgentRequest, current_user: User = Depe
     try:
         data = {
             'agent_name': agent_data.agent_name,
-            'deal_percent': agent_data.deal_percent,
+            'deal_percent': agent_data.deal_percent if agent_data.deal_percent is not None else 0.0,
             'comm_channel': agent_data.comm_channel,
             'notes': agent_data.notes,
             'payment_methods': agent_data.payment_methods
         }
-        data = {k: v for k, v in data.items() if v is not None}
+        data = {k: v for k, v in data.items() if v is not None or k == 'deal_percent'}
         
         if agent_data.agent_id is not None:
             check_response = supabase.table(TABLE_AGENTS).select('*').eq('agent_id', agent_data.agent_id).execute()

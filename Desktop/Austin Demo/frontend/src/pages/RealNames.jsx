@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAgents, getRealNames, upsertRealName } from '../utils/api';
 import DataTable from '../components/DataTable';
+import Drawer from '../components/Drawer';
 import './Agents.css';
 
 function RealNames() {
@@ -120,22 +121,12 @@ function RealNames() {
     <div className="agents-page">
       {error && <div className="error-message">{error}</div>}
 
-      {isFormOpen && (
-        <div className="form-overlay">
-          <div className="form-container">
-            <h2>{isUpdateMode ? 'Update Real Name Mapping' : 'Create Real Name Mapping'}</h2>
-            <form onSubmit={handleSubmit}>
-              {isUpdateMode && (
-                <div className="form-group">
-                  <label>ID</label>
-                  <input
-                    type="text"
-                    value={formData.id || ''}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-              )}
+      <Drawer
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        title={isUpdateMode ? 'Update Real Name Mapping' : 'Create Real Name Mapping'}
+      >
+        <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Player ID *</label>
                 <input
@@ -181,9 +172,7 @@ function RealNames() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Drawer>
 
       <DataTable
         data={realNames}

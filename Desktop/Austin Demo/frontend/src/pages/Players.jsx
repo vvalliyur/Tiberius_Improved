@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAgents, getPlayers, upsertPlayer } from '../utils/api';
 import DataTable from '../components/DataTable';
+import Drawer from '../components/Drawer';
 import './Players.css';
 
 function Players() {
@@ -149,11 +150,12 @@ function Players() {
     <div className="players-page">
       {error && <div className="error-message">{error}</div>}
 
-      {isFormOpen && (
-        <div className="form-overlay">
-          <div className="form-container">
-            <h2>{isUpdateMode ? 'Update Player' : 'Create Player'}</h2>
-            <form onSubmit={handleSubmit}>
+      <Drawer
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        title={isUpdateMode ? 'Update Player' : 'Create Player'}
+      >
+        <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Player ID *</label>
                 <input
@@ -262,9 +264,7 @@ function Players() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Drawer>
 
       <DataTable
         data={players}
