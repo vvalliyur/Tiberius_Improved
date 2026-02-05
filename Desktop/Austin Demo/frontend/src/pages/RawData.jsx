@@ -45,27 +45,15 @@ function Dashboard() {
     { accessorKey: 'game_count', header: 'Game Count' },
   ], []);
 
-  const handleFetchGameData = async () => {
-    if (!startDate || !endDate) {
-      setError('Please provide both start date and end date');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      // lookbackDays always null - commented out feature
-      const response = await getData(startDate || null, endDate || null, null, null);
-      setGameData(response.data || []);
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to fetch game data');
-      setGameData([]);
-    } finally {
-      setIsLoading(false);
-    }
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const handleFetchAggregatedData = async () => {
+  const handleFetch = async () => {
     if (!startDate || !endDate) {
       setError('Please provide both start date and end date');
       return;
@@ -74,22 +62,19 @@ function Dashboard() {
     setIsLoading(true);
     setError(null);
     try {
-      // lookbackDays always null - commented out feature
-      const response = await getAggregatedData(startDate || null, endDate || null, null);
-      setAggregatedData(response.data || []);
+      // Fetch both datasets in parallel
+      const [gameDataResponse, aggregatedDataResponse] = await Promise.all([
+        getData(startDate || null, endDate || null, null, null),
+        getAggregatedData(startDate || null, endDate || null, null)
+      ]);
+      setGameData(gameDataResponse.data || []);
+      setAggregatedData(aggregatedDataResponse.data || []);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to fetch aggregated data');
+      setError(err.response?.data?.detail || err.message || 'Failed to fetch data');
+      setGameData([]);
       setAggregatedData([]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleFetch = () => {
-    if (activeTab === 'game-data') {
-      handleFetchGameData();
-    } else {
-      handleFetchAggregatedData();
     }
   };
 
@@ -115,32 +100,41 @@ function Dashboard() {
 
       <Card className="overflow-hidden">
         <CardHeader className="bg-muted/30 border-b">
-          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
-            <button
-              className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-                activeTab === 'game-data'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-              onClick={() => setActiveTab('game-data')}
-            >
-              Game Data
-            </button>
-            <button
-              className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
-                activeTab === 'aggregated'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-              onClick={() => setActiveTab('aggregated')}
-            >
-              Aggregated Data
-            </button>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+                <button
+                  className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'game-data'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setActiveTab('game-data')}
+                >
+                  Game Data
+                </button>
+                <button
+                  className={`px-6 py-2.5 font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'aggregated'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setActiveTab('aggregated')}
+                >
+                  Aggregated Data
+                </button>
+              </div>
+              {startDate && endDate && (
+                <span className="text-sm text-muted-foreground">
+                  {formatDisplayDate(startDate)} to {formatDisplayDate(endDate)}
+                </span>
+              )}
+            </div>
+            <TableSearchBox
+              value={searchFilter}
+              onChange={setSearchFilter}
+            />
           </div>
-          <TableSearchBox
-            value={searchFilter}
-            onChange={setSearchFilter}
-          />
         </CardHeader>
         <DataTable
           data={activeTab === 'game-data' ? gameData : aggregatedData}
