@@ -102,14 +102,14 @@ function Players() {
 
     try {
       const submitData = {
-        player_id: formData.player_id || null,
-        player_name: formData.player_name,
-        agent_id: formData.agent_id ? parseInt(formData.agent_id) : null,
-        credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : null,
-        weekly_credit_adjustment: formData.weekly_credit_adjustment ? parseFloat(formData.weekly_credit_adjustment) : 0.0,
-        comm_channel: formData.comm_channel || null,
-        notes: formData.notes || null,
-        payment_methods: formData.payment_methods || null,
+        player_id: formData.player_id.trim(),
+        player_name: formData.player_name.trim(),
+        agent_id: formData.agent_id ? parseInt(formData.agent_id, 10) : null,
+        credit_limit: formData.credit_limit && formData.credit_limit !== '' ? parseFloat(formData.credit_limit) : null,
+        weekly_credit_adjustment: formData.weekly_credit_adjustment && formData.weekly_credit_adjustment !== '' ? parseFloat(formData.weekly_credit_adjustment) : 0.0,
+        comm_channel: formData.comm_channel && formData.comm_channel.trim() !== '' ? formData.comm_channel.trim() : null,
+        notes: formData.notes && formData.notes.trim() !== '' ? formData.notes.trim() : null,
+        payment_methods: formData.payment_methods && formData.payment_methods.trim() !== '' ? formData.payment_methods.trim() : null,
         is_blocked: formData.do_not_allow,
       };
 

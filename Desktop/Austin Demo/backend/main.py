@@ -573,12 +573,16 @@ async def upsert_agent(agent_data: UpsertAgentRequest, current_user: User = Depe
 @app.post('/players/upsert')
 async def upsert_player(player_data: UpsertPlayerRequest, current_user: User = Depends(get_current_user)):
     try:
+        if not player_data.player_id:
+            raise HTTPException(status_code=400, detail='player_id is required')
+        
         if player_data.agent_id is not None:
             agent_check = supabase.table(TABLE_AGENTS).select('agent_id').eq('agent_id', player_data.agent_id).execute()
             if not agent_check.data:
                 raise HTTPException(status_code=404, detail=f'Agent with ID {player_data.agent_id} not found')
         
         data = {
+            'player_id': player_data.player_id,
             'player_name': player_data.player_name,
             'agent_id': player_data.agent_id,
             'credit_limit': player_data.credit_limit,
@@ -589,13 +593,12 @@ async def upsert_player(player_data: UpsertPlayerRequest, current_user: User = D
             'is_blocked': player_data.is_blocked
         }
         # Keep is_blocked and weekly_credit_adjustment even if False/0, but filter out None values for other fields
-        data = {k: v for k, v in data.items() if v is not None or k in ['is_blocked', 'weekly_credit_adjustment']}
+        data = {k: v for k, v in data.items() if v is not None or k in ['is_blocked', 'weekly_credit_adjustment', 'player_id']}
         
-        if player_data.player_id is not None:
-            check_response = supabase.table(TABLE_PLAYERS).select('*').eq('player_id', player_data.player_id).execute()
-            if not check_response.data:
-                raise HTTPException(status_code=404, detail=f'Player with ID {player_data.player_id} not found')
-            
+        check_response = supabase.table(TABLE_PLAYERS).select('*').eq('player_id', player_data.player_id).execute()
+        
+        if check_response.data:
+            # Update existing player
             response = supabase.table(TABLE_PLAYERS).update(data).eq('player_id', player_data.player_id).execute()
             if not response.data:
                 raise HTTPException(status_code=500, detail='Failed to update player')
@@ -611,6 +614,7 @@ async def upsert_player(player_data: UpsertPlayerRequest, current_user: User = D
             
             return {'data': response.data[0], 'message': 'Player updated successfully'}
         else:
+            # Create new player
             response = supabase.table(TABLE_PLAYERS).insert(data).execute()
             if not response.data:
                 raise HTTPException(status_code=500, detail='Failed to create player')

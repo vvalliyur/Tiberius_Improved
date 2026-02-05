@@ -10,7 +10,7 @@ class UpsertAgentRequest(BaseModel):
     payment_methods: str | None = None
 
 class UpsertPlayerRequest(BaseModel):
-    player_id: int | None = None
+    player_id: str | None = None
     player_name: str
     agent_id: int | None = None
     credit_limit: float | None = None

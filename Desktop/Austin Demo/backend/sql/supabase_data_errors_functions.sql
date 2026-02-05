@@ -3,7 +3,7 @@
 
 -- 1. Player IDs in games table that are not in players table
 -- These are new players who have game records but have not been created as players yet
--- Note: player_id in games is VARCHAR, player_id in players is INTEGER (cast to TEXT for comparison)
+-- Note: player_id in games and players are both VARCHAR(255)
 CREATE OR REPLACE FUNCTION get_players_in_games_not_in_players()
 RETURNS TABLE (
     player_id VARCHAR(255),
@@ -22,7 +22,7 @@ BEGIN
     WHERE NOT EXISTS (
         SELECT 1 
         FROM players p 
-        WHERE p.player_id::TEXT = g.player_id
+        WHERE p.player_id = g.player_id
     )
     GROUP BY g.player_id
     ORDER BY COUNT(*) DESC, g.player_id;
@@ -33,7 +33,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Players that exist but have NULL agent_id or invalid agent_id
 CREATE OR REPLACE FUNCTION get_players_not_mapped_to_agents()
 RETURNS TABLE (
-    player_id INTEGER,
+    player_id VARCHAR(255),
     player_name VARCHAR(255),
     agent_id INTEGER,
     error_description TEXT
@@ -41,7 +41,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        p.player_id::INTEGER AS player_id,
+        p.player_id::VARCHAR(255) AS player_id,
         p.player_name::VARCHAR(255) AS player_name,
         p.agent_id::INTEGER AS agent_id,
         CASE 

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Download } from 'lucide-react';
 import { downloadDataErrors, downloadAllDataErrors } from '../utils/csvExport';
-import { formatCurrency } from '../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../utils/numberFormat';
 
 function Check() {
   const [dataErrors, setDataErrors] = useState({
@@ -222,7 +222,10 @@ function Check() {
                     header: 'Default Deal %',
                     cell: info => {
                       const value = info.getValue();
-                      return value !== null && value !== undefined ? `${(Number(value) * 100).toFixed(2)}%` : 'N/A';
+                      if (value === null || value === undefined) return 'N/A';
+                      const percent = Number(value) * 100;
+                      const rounded = Math.round(percent * 100) / 100;
+                      return rounded % 1 === 0 ? `${rounded}%` : rounded.toFixed(2).replace(/\.?0+$/, '') + '%';
                     }
                   },
                   { accessorKey: 'rule_count', header: 'Rule Count' },

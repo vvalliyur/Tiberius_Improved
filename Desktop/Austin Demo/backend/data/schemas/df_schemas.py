@@ -32,7 +32,7 @@ class Agent(BaseTimestamp):
     payment_methods: str | None = None
 
 class Player(BaseTimestamp):
-    player_id: int
+    player_id: str
     player_name: str
     agent_id: int | None = None
     credit_limit: float | None = None
@@ -51,7 +51,7 @@ class AgentReport(BaseModel):
     game_count: int
 
 class PlayerHistory(BaseModel):
-    player_id: int
+    player_id: str
     player_name: str
     total_profit: float
     total_tips: float
@@ -103,7 +103,7 @@ class AgentS(BaseTimestampS):
         coerce = True
 
 class PlayerS(BaseTimestampS):
-    player_id: Series[int] = Field()
+    player_id: Series[str] = Field()
     player_name: Series[str] = Field()
     agent_id: Series[int] = Field(nullable=True)
     credit_limit: Series[float] = Field(nullable=True)

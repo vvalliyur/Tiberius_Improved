@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 -- Players Table
 CREATE TABLE IF NOT EXISTS players (
-    player_id SERIAL PRIMARY KEY,
+    player_id VARCHAR(255) PRIMARY KEY,
     player_name VARCHAR(255) NOT NULL,
     agent_id INTEGER REFERENCES agents(agent_id) ON DELETE SET NULL,
     credit_limit DECIMAL(10, 2),

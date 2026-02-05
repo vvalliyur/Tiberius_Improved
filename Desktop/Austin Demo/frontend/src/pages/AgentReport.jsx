@@ -31,12 +31,12 @@ function AgentReport() {
     {
       accessorKey: 'total_tips',
       header: 'Total Tips',
-      cell: info => Number(info.getValue()).toFixed(2),
+      cell: info => formatNumber(info.getValue()),
     },
     {
       accessorKey: 'agent_tips',
       header: 'Agent Tips',
-      cell: info => Number(info.getValue()).toFixed(2),
+      cell: info => formatNumber(info.getValue()),
     },
     { accessorKey: 'game_count', header: 'Game Count' },
   ];

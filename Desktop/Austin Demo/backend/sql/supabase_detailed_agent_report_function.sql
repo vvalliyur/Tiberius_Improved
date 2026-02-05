@@ -29,7 +29,7 @@ BEGIN
             SUM(g.tips) AS total_tips
         FROM agents a
         INNER JOIN players p ON a.agent_id = p.agent_id
-        INNER JOIN games g ON g.player_id = p.player_id::TEXT
+        INNER JOIN games g ON g.player_id = p.player_id
         WHERE g.date_started >= start_date_param
           AND g.date_ended <= end_date_param
           AND p.agent_id IS NOT NULL
@@ -69,7 +69,7 @@ BEGIN
         COALESCE(SUM(g.tips), 0)::DECIMAL(10, 2) * COALESCE(pdp.deal_percent, 0)::DECIMAL(10, 3) AS agent_tips
     FROM agents a
     INNER JOIN players p ON a.agent_id = p.agent_id
-    INNER JOIN games g ON g.player_id = p.player_id::TEXT
+    INNER JOIN games g ON g.player_id = p.player_id
     INNER JOIN player_deal_percents pdp ON pdp.agent_id = a.agent_id AND pdp.player_id = g.player_id
     WHERE g.date_started >= start_date_param
       AND g.date_ended <= end_date_param

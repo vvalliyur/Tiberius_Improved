@@ -1,6 +1,6 @@
 -- SQL function to get agent report with joins at database level
 -- This replaces the 3 separate queries with a single optimized query
--- Note: games.player_id is VARCHAR, players.player_id is INTEGER, so we cast for the join
+-- Note: games.player_id and players.player_id are both VARCHAR(255)
 -- Updated to use deal_percent_rules table with per-game calculation
 
 CREATE OR REPLACE FUNCTION get_agent_report(
@@ -28,7 +28,7 @@ BEGIN
         COUNT(g.*)::BIGINT AS game_count
     FROM agents a
     INNER JOIN players p ON a.agent_id = p.agent_id
-    INNER JOIN games g ON g.player_id = p.player_id::TEXT
+    INNER JOIN games g ON g.player_id = p.player_id
     WHERE g.date_started >= start_date_param
       AND g.date_ended <= end_date_param
       AND p.agent_id IS NOT NULL
