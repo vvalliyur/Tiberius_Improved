@@ -121,7 +121,7 @@ function History() {
   const aggregatedColumns = useMemo(() => [
     { accessorKey: 'player_id', header: 'Player ID' },
     { accessorKey: 'player_name', header: 'Player Name' },
-    { accessorKey: 'game_count', header: 'Total Hands' },
+    { accessorKey: 'total_hands', header: 'Total Hands', cell: info => formatNumber(info.getValue() || 0) },
     { accessorKey: 'total_profit', header: 'Total Profit', cell: info => {
       const value = Number(info.getValue());
       return <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatNumber(value)}</span>;
