@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAgents, getDealRules, upsertDealRule } from '../utils/api';
 import DataTable from '../components/DataTable';
 import Drawer from '../components/Drawer';
-import { formatCurrency } from '../utils/numberFormat';
+import { formatNumber } from '../utils/numberFormat';
 import './Agents.css';
 
 function DealRules() {
@@ -29,7 +29,7 @@ function DealRules() {
 
   const columns = [
     { accessorKey: 'agent_name', header: 'Agent Name' },
-    { accessorKey: 'threshold', header: 'Threshold', cell: info => formatCurrency(info.getValue()) },
+    { accessorKey: 'threshold', header: 'Threshold', cell: info => formatNumber(info.getValue()) },
     { accessorKey: 'deal_percent', header: 'Deal %', cell: info => formatDealPercent(info.getValue()) },
     {
       accessorKey: 'actions',

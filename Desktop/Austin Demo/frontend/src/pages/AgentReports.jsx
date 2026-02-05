@@ -4,6 +4,8 @@ import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import DateRangeFilter from '../components/DateRangeFilter';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Button } from '../components/ui/button';
 import { ChevronDown, ChevronUp, Copy, Check, Send } from 'lucide-react';
 import { formatNumber } from '../utils/numberFormat';
 import './AgentReport.css';
@@ -29,6 +31,8 @@ function AgentReports() {
   const [aggregatedSearch, setAggregatedSearch] = useState('');
   const [groupBy, setGroupBy] = useState('player_id'); // 'player_id' or 'real_name'
   const [detailedDataByRealName, setDetailedDataByRealName] = useState([]);
+  const [isAggregatedExpanded, setIsAggregatedExpanded] = useState(true);
+  const [agentSearches, setAgentSearches] = useState({});
 
   const aggregatedColumns = [
     { 
@@ -61,6 +65,94 @@ function AgentReports() {
       cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
     },
   ];
+
+  const getDetailedColumns = (groupByType) => {
+    if (groupByType === 'real_name') {
+      return [
+        { 
+          accessorKey: 'player_name', 
+          header: 'Real Name',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'player_ids', 
+          header: 'Player IDs',
+          cell: info => <div className="text-center">{info.getValue() || info.row.original.identifier || ''}</div>
+        },
+        { 
+          accessorKey: 'deal_percent', 
+          header: 'Deal %',
+          cell: info => <div className="text-center">{formatDealPercent(info.getValue())}</div>
+        },
+        {
+          accessorKey: 'total_profit',
+          header: 'Total Profit',
+          cell: info => {
+            const value = Number(info.getValue());
+            return (
+              <div className="text-center">
+                <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatNumber(value || 0)}
+                </span>
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: 'total_tips',
+          header: 'Total Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+        {
+          accessorKey: 'agent_tips',
+          header: 'Agent Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+      ];
+    } else {
+      return [
+        { 
+          accessorKey: 'player_id', 
+          header: 'Player ID',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'player_name', 
+          header: 'Player Name',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'deal_percent', 
+          header: 'Deal %',
+          cell: info => <div className="text-center">{formatDealPercent(info.getValue())}</div>
+        },
+        {
+          accessorKey: 'total_profit',
+          header: 'Total Profit',
+          cell: info => {
+            const value = Number(info.getValue());
+            return (
+              <div className="text-center">
+                <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatNumber(value || 0)}
+                </span>
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: 'total_tips',
+          header: 'Total Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+        {
+          accessorKey: 'agent_tips',
+          header: 'Agent Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+      ];
+    }
+  };
 
   const handleFetch = async () => {
     if (!startDate || !endDate) {
@@ -171,6 +263,17 @@ function AgentReports() {
       }
       return newSet;
     });
+  };
+
+  const toggleAggregatedTable = () => {
+    setIsAggregatedExpanded(prev => !prev);
+  };
+
+  const setAgentSearch = (agentId, value) => {
+    setAgentSearches(prev => ({
+      ...prev,
+      [agentId]: value
+    }));
   };
 
   const copyTableToClipboard = async (agent) => {
@@ -311,56 +414,73 @@ function AgentReports() {
         </div>
       )}
 
-      {aggregatedData.length > 0 && (
-        <Card className="overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b">
-            <CardTitle>Aggregated Report</CardTitle>
-            <TableSearchBox
-              value={aggregatedSearch}
-              onChange={setAggregatedSearch}
-            />
-          </CardHeader>
-          <DataTable
-            data={aggregatedData}
-            columns={aggregatedColumns}
-            isLoading={isLoading}
-            emptyMessage="No agent report data available. Adjust filters or upload game data"
-            globalFilter={aggregatedSearch}
-            onGlobalFilterChange={setAggregatedSearch}
-            hideSearch={true}
-          />
-          {/* Totals Row */}
-          {aggregatedData.length > 0 && (() => {
-            const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
-            const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
-            
-            return (
-              <div className="mt-4 pt-4 border-t px-3 pb-3">
-                <div className="rounded-lg border overflow-hidden">
-                  <table className="w-full">
-                    <tbody>
-                      <tr className="border-b-0 bg-muted/30 font-semibold">
-                        <td className="p-4 text-center">Total:</td>
-                        <td className="p-4 text-center">
-                          <span className={totalProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                            {formatNumber(totalProfit)}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          {formatNumber(totalTips)}
-                        </td>
-                        <td className="p-4 text-center">
-                          {/* Empty cell for Agent Tips column alignment */}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+      {aggregatedData.length > 0 && (() => {
+        const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
+        const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
+        const totalAgentTips = aggregatedData.reduce((sum, row) => sum + (Number(row.agent_tips) || 0), 0);
+        const totalAgents = aggregatedData.length;
+        
+        return (
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-6 flex-1">
+                  <CardTitle>Aggregated Report</CardTitle>
+                  <div className="agent-summary">
+                    <div className="summary-item">
+                      <span className="summary-label text-center">Agents</span>
+                      <span className="summary-value text-center">{totalAgents}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label text-center">Total Profit</span>
+                      <span className={`summary-value text-center ${totalProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}`}>
+                        {formatNumber(totalProfit)}
+                      </span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label text-center">Total Tips</span>
+                      <span className="summary-value text-center">{formatNumber(totalTips)}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label text-center">Agent Tips</span>
+                      <span className="summary-value text-center highlight">{formatNumber(totalAgentTips)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleAggregatedTable}
+                    className="h-8 w-8 p-0"
+                  >
+                    {isAggregatedExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <TableSearchBox
+                    value={aggregatedSearch}
+                    onChange={setAggregatedSearch}
+                  />
                 </div>
               </div>
-            );
-          })()}
-        </Card>
-      )}
+            </CardHeader>
+            {isAggregatedExpanded && (
+              <DataTable
+                data={aggregatedData}
+                columns={aggregatedColumns}
+                isLoading={isLoading}
+                emptyMessage="No agent report data available. Adjust filters or upload game data"
+                globalFilter={aggregatedSearch}
+                onGlobalFilterChange={setAggregatedSearch}
+                hideSearch={true}
+              />
+            )}
+          </Card>
+        );
+      })()}
 
       {agents.length > 0 && (
         <div className="detailed-agent-report-section mt-8">
@@ -422,107 +542,64 @@ function AgentReports() {
                         <span className="summary-value text-center highlight">{formatNumber(agent.total_agent_tips)}</span>
                       </div>
                     </div>
-                    <div className="agent-header-buttons">
-                      <button
-                        type="button"
-                        onClick={() => toggleTable(agent.agent_id)}
-                        className="header-action-button collapse-button"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => copyTableToClipboard(agent)}
-                        className="header-action-button copy-button"
-                        title="Copy to clipboard"
-                      >
-                        {copiedAgentId === agent.agent_id ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => sendToTelegram(agent)}
-                        className="header-action-button telegram-button"
-                        title="Send to Telegram"
-                      >
-                        {sentTelegramAgentId === agent.agent_id ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                      </button>
+                    <div className="flex items-center gap-2">
+                      <TableSearchBox
+                        value={agentSearches[agent.agent_id] || ''}
+                        onChange={(value) => setAgentSearch(agent.agent_id, value)}
+                      />
+                      <div className="agent-header-buttons">
+                        <button
+                          type="button"
+                          onClick={() => toggleTable(agent.agent_id)}
+                          className="header-action-button collapse-button"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyTableToClipboard(agent)}
+                          className="header-action-button copy-button"
+                          title="Copy to clipboard"
+                        >
+                          {copiedAgentId === agent.agent_id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => sendToTelegram(agent)}
+                          className="header-action-button telegram-button"
+                          title="Send to Telegram"
+                        >
+                          {sentTelegramAgentId === agent.agent_id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="table-section">
-                    <table className="players-table">
-                      {isExpanded && (
-                        <thead>
-                          <tr>
-                            {groupBy === 'real_name' ? (
-                              <>
-                                <th>Real Name</th>
-                                <th>Player IDs</th>
-                              </>
-                            ) : (
-                              <>
-                                <th>Player ID</th>
-                                <th>Player Name</th>
-                              </>
-                            )}
-                            <th>Deal %</th>
-                            <th className="tips-header">Total Profit</th>
-                            <th className="tips-header">Total Tips</th>
-                            <th className="tips-header">Agent Tips</th>
-                          </tr>
-                        </thead>
-                      )}
-                      {isExpanded ? (
-                        <tbody>
-                          {agent.players.map((player) => (
-                            <tr key={player.identifier}>
-                              {groupBy === 'real_name' ? (
-                                <>
-                                  <td>{player.player_name}</td>
-                                  <td>{player.player_ids || player.identifier}</td>
-                                </>
-                              ) : (
-                                <>
-                                  <td>{player.player_id}</td>
-                                  <td>{player.player_name}</td>
-                                </>
-                              )}
-                              <td>{formatDealPercent(player.deal_percent)}</td>
-                              <td className="tips-cell">
-                                <span className={player.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                                  {formatNumber(player.total_profit || 0)}
-                                </span>
-                              </td>
-                              <td className="tips-cell">{formatNumber(player.total_tips)}</td>
-                              <td className="tips-cell">{formatNumber(player.agent_tips)}</td>
-                            </tr>
-                          ))}
-                          <tr className="totals-row">
-                            <td colSpan="3" className="totals-label">Total</td>
-                            <td className="totals-value tips-cell">
-                              <span className={agent.total_profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                                {formatNumber(agent.total_profit || 0)}
-                              </span>
-                            </td>
-                            <td className="totals-value tips-cell">{formatNumber(agent.total_tips)}</td>
-                            <td className="totals-value tips-cell">{formatNumber(agent.total_agent_tips)}</td>
-                          </tr>
-                        </tbody>
-                      ) : null}
-                    </table>
-                  </div>
+                  {isExpanded && (
+                    <div className="table-section">
+                      <DataTable
+                        data={agent.players}
+                        columns={getDetailedColumns(groupBy)}
+                        isLoading={false}
+                        emptyMessage="No player data available"
+                        globalFilter={agentSearches[agent.agent_id] || ''}
+                        onGlobalFilterChange={(value) => setAgentSearch(agent.agent_id, value)}
+                        hideSearch={true}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

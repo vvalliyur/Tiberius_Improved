@@ -4,9 +4,9 @@ import DataTable from '../components/DataTable';
 import TableSearchBox from '../components/TableSearchBox';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { downloadDataErrors, downloadAllDataErrors } from '../utils/csvExport';
-import { formatCurrency, formatNumber } from '../utils/numberFormat';
+import { formatNumber } from '../utils/numberFormat';
 
 function Check() {
   const [dataErrors, setDataErrors] = useState({
@@ -18,6 +18,11 @@ function Check() {
   const [missingPlayersSearch, setMissingPlayersSearch] = useState('');
   const [unmappedPlayersSearch, setUnmappedPlayersSearch] = useState('');
   const [unmappedAgentsSearch, setUnmappedAgentsSearch] = useState('');
+  const [expandedTables, setExpandedTables] = useState({
+    playersInGamesNotInPlayers: true,
+    playersNotMappedToAgents: true,
+    agentsNotMappedToDealRules: true
+  });
 
   useEffect(() => {
     const fetchDataErrors = async () => {
@@ -38,6 +43,13 @@ function Check() {
     dataErrors.players_in_games_not_in_players.count +
     dataErrors.players_not_mapped_to_agents.count +
     dataErrors.agents_not_mapped_to_deal_rules.count;
+
+  const toggleTable = (tableKey) => {
+    setExpandedTables(prev => ({
+      ...prev,
+      [tableKey]: !prev[tableKey]
+    }));
+  };
 
   return (
     <div className="space-y-8 w-full">
@@ -80,6 +92,18 @@ function Check() {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTable('playersInGamesNotInPlayers')}
+                    className="h-8 w-8 p-0"
+                  >
+                    {expandedTables.playersInGamesNotInPlayers ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
                       'players_in_games_not_in_players',
@@ -103,7 +127,8 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <DataTable
+              {expandedTables.playersInGamesNotInPlayers && (
+                <DataTable
                 data={dataErrors.players_in_games_not_in_players.data}
                 columns={[
                   { accessorKey: 'player_id', header: 'Player ID' },
@@ -112,7 +137,7 @@ function Check() {
                   { 
                     accessorKey: 'total_tips', 
                     header: 'Total Tips',
-                    cell: info => formatCurrency(info.getValue())
+                    cell: info => formatNumber(info.getValue())
                   },
                 ]}
                 isLoading={errorsLoading}
@@ -121,6 +146,7 @@ function Check() {
                 onGlobalFilterChange={setMissingPlayersSearch}
                 hideSearch={true}
               />
+              )}
             </Card>
           )}
 
@@ -132,6 +158,18 @@ function Check() {
                   Players Not Mapped to Agents ({dataErrors.players_not_mapped_to_agents.count})
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTable('playersNotMappedToAgents')}
+                    className="h-8 w-8 p-0"
+                  >
+                    {expandedTables.playersNotMappedToAgents ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
                   <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
@@ -156,7 +194,8 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <DataTable
+              {expandedTables.playersNotMappedToAgents && (
+                <DataTable
                 data={dataErrors.players_not_mapped_to_agents.data}
                 columns={[
                   { accessorKey: 'player_id', header: 'Player ID' },
@@ -177,6 +216,7 @@ function Check() {
                 onGlobalFilterChange={setUnmappedPlayersSearch}
                 hideSearch={true}
               />
+              )}
             </Card>
           )}
 
@@ -188,6 +228,18 @@ function Check() {
                   Agents Not Mapped to Deal Rules ({dataErrors.agents_not_mapped_to_deal_rules.count})
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTable('agentsNotMappedToDealRules')}
+                    className="h-8 w-8 p-0"
+                  >
+                    {expandedTables.agentsNotMappedToDealRules ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
                   <Button
                     onClick={() => downloadDataErrors(
                       dataErrors,
@@ -212,7 +264,8 @@ function Check() {
                   />
                 </div>
               </CardHeader>
-              <DataTable
+              {expandedTables.agentsNotMappedToDealRules && (
+                <DataTable
                 data={dataErrors.agents_not_mapped_to_deal_rules.data}
                 columns={[
                   { accessorKey: 'agent_id', header: 'Agent ID' },
@@ -236,6 +289,7 @@ function Check() {
                 onGlobalFilterChange={setUnmappedAgentsSearch}
                 hideSearch={true}
               />
+              )}
             </Card>
           )}
         </div>

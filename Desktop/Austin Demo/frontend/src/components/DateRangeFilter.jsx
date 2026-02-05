@@ -564,20 +564,6 @@ export default function DateRangeFilter({
         </div>
       </div>
 
-      {(startDate || endDate) && (
-        <div className="mt-3 pt-3 border-t">
-          <p className="text-xs text-muted-foreground">
-            {startDate && endDate 
-              ? `Date range: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}`
-              : startDate
-                ? `Start date: ${formatDisplayDate(startDate)}`
-                : endDate
-                  ? `End date: ${formatDisplayDate(endDate)}`
-                  : ''}
-          </p>
-        </div>
-      )}
-
       <DatePicker />
     </Card>
   );
