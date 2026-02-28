@@ -1,0 +1,615 @@
+import { useState, useEffect } from 'react';
+import { getAgentReports, sendTelegramMessage } from '../utils/api';
+import DataTable from '../components/DataTable';
+import TableSearchBox from '../components/TableSearchBox';
+import DateRangeFilter from '../components/DateRangeFilter';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Button } from '../components/ui/button';
+import { ChevronDown, Copy, Check, Send } from 'lucide-react';
+import { formatNumber } from '../utils/numberFormat';
+import './AgentReport.css';
+import './DetailedAgentReport.css';
+
+const formatDealPercent = (value) => {
+  const percent = Number(value) * 100;
+  const rounded = Math.round(percent * 100) / 100;
+  return rounded % 1 === 0 ? `${rounded}%` : rounded.toFixed(2).replace(/\.?0+$/, '') + '%';
+};
+
+function AgentReports() {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [lookbackDays, setLookbackDays] = useState(null);
+  const [aggregatedData, setAggregatedData] = useState([]);
+  const [detailedData, setDetailedData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [expandedAgents, setExpandedAgents] = useState(new Set());
+  const [copiedAgentId, setCopiedAgentId] = useState(null);
+  const [sentTelegramAgentId, setSentTelegramAgentId] = useState(null);
+  const [aggregatedSearch, setAggregatedSearch] = useState('');
+  const [groupBy, setGroupBy] = useState('player_id'); // 'player_id' or 'real_name'
+  const [detailedDataByRealName, setDetailedDataByRealName] = useState([]);
+  const [isAggregatedExpanded, setIsAggregatedExpanded] = useState(true);
+  const [agentSearches, setAgentSearches] = useState({});
+
+  const aggregatedColumns = [
+    { 
+      accessorKey: 'agent_name', 
+      header: 'Agent Name',
+      cell: info => <div className="text-center">{info.getValue()}</div>
+    },
+    {
+      accessorKey: 'total_profit',
+      header: 'Total Profit',
+      cell: info => {
+        const value = Number(info.getValue());
+        return (
+          <div className="text-center">
+            <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+              {formatNumber(value)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'total_tips',
+      header: 'Total Tips',
+      cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+    },
+    {
+      accessorKey: 'agent_tips',
+      header: 'Agent Tips',
+      cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+    },
+  ];
+
+  const getDetailedColumns = (groupByType) => {
+    if (groupByType === 'real_name') {
+      return [
+        { 
+          accessorKey: 'player_name', 
+          header: 'Real Name',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'player_ids', 
+          header: 'Player IDs',
+          cell: info => <div className="text-center">{info.getValue() || info.row.original.identifier || ''}</div>
+        },
+        { 
+          accessorKey: 'deal_percent', 
+          header: 'Deal %',
+          cell: info => <div className="text-center">{formatDealPercent(info.getValue())}</div>
+        },
+        {
+          accessorKey: 'total_profit',
+          header: 'Total Profit',
+          cell: info => {
+            const value = Number(info.getValue());
+            return (
+              <div className="text-center">
+                <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatNumber(value || 0)}
+                </span>
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: 'total_tips',
+          header: 'Total Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+        {
+          accessorKey: 'agent_tips',
+          header: 'Agent Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+      ];
+    } else {
+      return [
+        { 
+          accessorKey: 'player_id', 
+          header: 'Player ID',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'player_name', 
+          header: 'Player Name',
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        },
+        { 
+          accessorKey: 'deal_percent', 
+          header: 'Deal %',
+          cell: info => <div className="text-center">{formatDealPercent(info.getValue())}</div>
+        },
+        {
+          accessorKey: 'total_profit',
+          header: 'Total Profit',
+          cell: info => {
+            const value = Number(info.getValue());
+            return (
+              <div className="text-center">
+                <span className={value >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatNumber(value || 0)}
+                </span>
+              </div>
+            );
+          },
+        },
+        {
+          accessorKey: 'total_tips',
+          header: 'Total Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+        {
+          accessorKey: 'agent_tips',
+          header: 'Agent Tips',
+          cell: info => <div className="text-center">{formatNumber(info.getValue())}</div>,
+        },
+      ];
+    }
+  };
+
+  const handleFetch = async () => {
+    if (!startDate || !endDate) {
+      setError('Please provide both start date and end date');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch both views in parallel
+      const [responseByPlayerId, responseByRealName] = await Promise.all([
+        getAgentReports(startDate || null, endDate || null, null, 'player_id'),
+        getAgentReports(startDate || null, endDate || null, null, 'real_name')
+      ]);
+      
+      setAggregatedData(responseByPlayerId.aggregated?.data || []);
+      setDetailedData(responseByPlayerId.detailed?.data || []);
+      setDetailedDataByRealName(responseByRealName.detailed?.data || []);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Failed to fetch agent reports');
+      setAggregatedData([]);
+      setDetailedData([]);
+      setDetailedDataByRealName([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processDetailedData = (data) => {
+    return data.reduce((acc, row) => {
+      const agentId = row.agent_id;
+      if (!acc[agentId]) {
+        acc[agentId] = {
+          agent_id: row.agent_id,
+          agent_name: row.agent_name,
+          deal_percent: row.deal_percent,
+          players: [],
+          total_hands: 0,
+          total_profit: 0,
+          total_tips: 0,
+          total_agent_tips: 0,
+        };
+      }
+      
+      const totalHands = parseInt(row.total_hands || 0) || 0;
+      const totalProfit = parseFloat(row.total_profit || 0) || 0;
+      const totalTips = parseFloat(row.total_tips || 0) || 0;
+      const agentTips = parseFloat(row.agent_tips || 0) || 0;
+      
+      // Handle both player_id grouping and real_name grouping
+      if (row.real_name) {
+        // Grouped by real_name
+        acc[agentId].players.push({
+          identifier: row.real_name,
+          player_ids: row.player_ids || '',
+          player_name: row.real_name,
+          deal_percent: parseFloat(row.deal_percent || 0),
+          total_hands: totalHands,
+          total_profit: totalProfit,
+          total_tips: totalTips,
+          agent_tips: agentTips,
+          isRealName: true,
+        });
+      } else {
+        // Grouped by player_id
+        acc[agentId].players.push({
+          identifier: row.player_id,
+          player_id: row.player_id,
+          player_name: row.player_name,
+          deal_percent: parseFloat(row.deal_percent || 0),
+          total_hands: totalHands,
+          total_profit: totalProfit,
+          total_tips: totalTips,
+          agent_tips: agentTips,
+          isRealName: false,
+        });
+      }
+      
+      acc[agentId].total_hands += totalHands;
+      acc[agentId].total_profit += totalProfit;
+      acc[agentId].total_tips += parseFloat(row.total_tips || 0);
+      acc[agentId].total_agent_tips += parseFloat(row.agent_tips || 0);
+      return acc;
+    }, {});
+  };
+
+  const currentDetailedData = groupBy === 'real_name' ? detailedDataByRealName : detailedData;
+  const groupedByAgent = processDetailedData(currentDetailedData);
+  const agents = Object.values(groupedByAgent);
+
+  // Initialize all agents as expanded when data loads
+  useEffect(() => {
+    const dataToUse = groupBy === 'real_name' ? detailedDataByRealName : detailedData;
+    if (dataToUse.length > 0) {
+      const agentIds = [...new Set(dataToUse.map(row => row.agent_id))];
+      setExpandedAgents(new Set(agentIds));
+    }
+  }, [detailedData.length, detailedDataByRealName.length, groupBy]); // Re-run when data or groupBy changes
+
+  const toggleTable = (agentId) => {
+    setExpandedAgents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentId)) {
+        newSet.delete(agentId);
+      } else {
+        newSet.add(agentId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAggregatedTable = () => {
+    setIsAggregatedExpanded(prev => !prev);
+  };
+
+  const setAgentSearch = (agentId, value) => {
+    setAgentSearches(prev => ({
+      ...prev,
+      [agentId]: value
+    }));
+  };
+
+  const copyTableToClipboard = async (agent) => {
+    // Compact format: Player ID, Player Name, Deal %, Total Profit, Total Tips, Agent Tips
+    const rows = agent.players.map(player => {
+      if (groupBy === 'real_name') {
+        return `${player.player_name || ''}, ${player.player_ids || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+      } else {
+        return `${player.player_id || ''}, ${player.player_name || ''}, ${formatDealPercent(player.deal_percent)}, ${formatNumber(player.total_profit || 0)}, ${formatNumber(player.total_tips)}, ${formatNumber(player.agent_tips)}`;
+      }
+    });
+    
+    const totalsRow = `Total, , , , ${formatNumber(agent.total_profit || 0)}, ${formatNumber(agent.total_tips)}, ${formatNumber(agent.total_agent_tips)}`;
+    
+    const text = [...rows, totalsRow].join('\n');
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAgentId(agent.agent_id);
+      setTimeout(() => setCopiedAgentId(null), 2000);
+    } catch (err) {
+      // Error handled silently
+    }
+  };
+
+  const sendToTelegram = async (agent) => {
+    try {
+      // Format as compact markdown table
+      const headers = groupBy === 'real_name' 
+        ? ['Real Name', 'IDs', 'Deal%', 'Profit', 'Tips', 'Agent']
+        : ['Player ID', 'Name', 'Deal%', 'Profit', 'Tips', 'Agent'];
+      
+      // Helper to pad strings for alignment
+      const pad = (str, width) => String(str || '').padEnd(width, ' ').substring(0, width);
+      
+      // Calculate column widths
+      const colWidths = headers.map((h, i) => {
+        let maxWidth = h.length;
+        agent.players.forEach(player => {
+          const playerId = groupBy === 'real_name' ? (player.player_name || '') : (player.player_id || '');
+          const playerName = groupBy === 'real_name' ? (player.player_ids || '') : (player.player_name || '');
+          const values = [
+            playerId,
+            playerName,
+            formatDealPercent(player.deal_percent),
+            formatNumber(player.total_profit || 0),
+            formatNumber(player.total_tips),
+            formatNumber(player.agent_tips)
+          ];
+          if (values[i] && values[i].length > maxWidth) {
+            maxWidth = values[i].length;
+          }
+        });
+        // Add totals row
+        const totals = [
+          'Total',
+          '',
+          '',
+          formatNumber(agent.total_profit || 0),
+          formatNumber(agent.total_tips),
+          formatNumber(agent.total_agent_tips)
+        ];
+        if (totals[i] && totals[i].length > maxWidth) {
+          maxWidth = totals[i].length;
+        }
+        return Math.max(maxWidth, 6); // Minimum width of 6
+      });
+      
+      // Create header row
+      const headerRow = headers.map((h, i) => pad(h, colWidths[i])).join(' | ');
+      
+      // Create table rows
+      const tableRows = agent.players.map(player => {
+        const playerId = groupBy === 'real_name' ? (player.player_name || '') : (player.player_id || '');
+        const playerName = groupBy === 'real_name' ? (player.player_ids || '') : (player.player_name || '');
+        const dealPercent = formatDealPercent(player.deal_percent);
+        const profit = formatNumber(player.total_profit || 0);
+        const tips = formatNumber(player.total_tips);
+        const agentTips = formatNumber(player.agent_tips);
+        
+        const values = [playerId, playerName, dealPercent, profit, tips, agentTips];
+        return values.map((v, i) => pad(v, colWidths[i])).join(' | ');
+      });
+      
+      // Create totals row - cleaner format
+      const totalsRow = [
+        pad('TOTAL', colWidths[0]),
+        pad('', colWidths[1]),
+        pad('', colWidths[2]),
+        pad(formatNumber(agent.total_profit || 0), colWidths[3]),
+        pad(formatNumber(agent.total_tips), colWidths[4]),
+        pad(formatNumber(agent.total_agent_tips), colWidths[5])
+      ].join(' | ');
+      
+      // Combine into table (no separators)
+      const table = `${headerRow}\n${tableRows.join('\n')}\n${totalsRow}`;
+      
+      // Format date range
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      };
+      
+      const dateRange = startDate && endDate 
+        ? `${formatDate(startDate)} to ${formatDate(endDate)}`
+        : 'Date range not specified';
+      
+      // Format message as HTML (since backend uses HTML parse_mode)
+      // Use <pre> tag for monospace table formatting
+      const message = `<b>${agent.agent_name} - Agent Report</b>\nPeriod: ${dateRange}\n\n<pre>${table}</pre>`;
+      
+      await sendTelegramMessage(agent.agent_id, message);
+      setSentTelegramAgentId(agent.agent_id);
+      setTimeout(() => setSentTelegramAgentId(null), 2000);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send to Telegram');
+    }
+  };
+
+  return (
+    <div className="space-y-6 w-full">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Reporting</h1>
+        <p className="text-sm text-muted-foreground mt-1">Agent profit and tips breakdown by date range</p>
+      </div>
+
+      <DateRangeFilter
+        startDate={startDate}
+        endDate={endDate}
+        lookbackDays={lookbackDays}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onLookbackDaysChange={setLookbackDays}
+        onFetch={handleFetch}
+        isLoading={isLoading}
+        showClubCode={false}
+      />
+
+      {error && (
+        <div className="rounded-lg border-l-4 border-destructive bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* ── Aggregated Report ── */}
+      {aggregatedData.length > 0 && (() => {
+        const totalProfit = aggregatedData.reduce((sum, row) => sum + (Number(row.total_profit) || 0), 0);
+        const totalTips = aggregatedData.reduce((sum, row) => sum + (Number(row.total_tips) || 0), 0);
+        const totalAgentTips = aggregatedData.reduce((sum, row) => sum + (Number(row.agent_tips) || 0), 0);
+        const totalAgents = aggregatedData.length;
+
+        return (
+          <Card className="overflow-hidden">
+            <div className="px-5 py-3.5 border-b">
+              {/* Row 1: title + collapse button */}
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <span className="text-[0.8125rem] font-semibold leading-none">Aggregated Report</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleAggregatedTable}
+                  className="h-7 w-7 p-0 flex-shrink-0"
+                >
+                  <ChevronDown className={`h-3.5 w-3.5 collapse-chevron ${isAggregatedExpanded ? 'open' : ''}`} />
+                </Button>
+              </div>
+              {/* Row 2: KPI stats */}
+              <div className="flex gap-5 flex-wrap mb-2.5">
+                <div>
+                  <p className="kpi-label">Agents</p>
+                  <p className="text-sm font-semibold tabular-nums">{totalAgents}</p>
+                </div>
+                <div>
+                  <p className="kpi-label">Total Profit</p>
+                  <p className={`text-sm font-semibold tabular-nums ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatNumber(totalProfit)}
+                  </p>
+                </div>
+                <div>
+                  <p className="kpi-label">Total Tips</p>
+                  <p className="text-sm font-semibold tabular-nums">{formatNumber(totalTips)}</p>
+                </div>
+                <div>
+                  <p className="kpi-label">Agent Tips</p>
+                  <p className="text-sm font-bold tabular-nums text-primary">{formatNumber(totalAgentTips)}</p>
+                </div>
+              </div>
+              {/* Row 3: search box (full width below stats) */}
+              <TableSearchBox value={aggregatedSearch} onChange={setAggregatedSearch} />
+            </div>
+            <div className={`collapsible-wrapper ${isAggregatedExpanded ? 'open' : ''}`}>
+              <div className="collapsible-inner">
+                <DataTable
+                  data={aggregatedData}
+                  columns={aggregatedColumns}
+                  isLoading={isLoading}
+                  emptyMessage="No agent report data available. Adjust filters or upload game data"
+                  globalFilter={aggregatedSearch}
+                  onGlobalFilterChange={setAggregatedSearch}
+                  hideSearch={true}
+                />
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
+      {/* ── Detailed Report ── */}
+      {agents.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h2 className="text-lg font-semibold">Detailed Report</h2>
+            <div className="inline-flex rounded-lg border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setGroupBy('player_id')}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  groupBy === 'player_id'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                By Player ID
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupBy('real_name')}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-border ${
+                  groupBy === 'real_name'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                By Real Name
+              </button>
+            </div>
+          </div>
+
+          {agents.map((agent) => {
+            const isExpanded = expandedAgents.has(agent.agent_id);
+            return (
+              <Card key={agent.agent_id} className="overflow-hidden">
+                {/* Card header — agent name + stats + action buttons */}
+                <div className="px-5 py-3.5 border-b">
+                  {/* Row 1: agent name + action buttons */}
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <h3 className="text-[0.8125rem] font-semibold leading-none truncate">
+                      {agent.agent_name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleTable(agent.agent_id)}
+                        className="header-action-button"
+                      >
+                        <ChevronDown className={`h-4 w-4 collapse-chevron ${isExpanded ? 'open' : ''}`} />
+                      </button>
+                      <span className="relative">
+                        <button
+                          type="button"
+                          onClick={() => copyTableToClipboard(agent)}
+                          className="header-action-button"
+                          title="Copy to clipboard"
+                        >
+                          {copiedAgentId === agent.agent_id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                        {copiedAgentId === agent.agent_id && <span className="inline-toast">Copied!</span>}
+                      </span>
+                      <span className="relative">
+                        <button
+                          type="button"
+                          onClick={() => sendToTelegram(agent)}
+                          className="header-action-button"
+                          title="Send to Telegram"
+                        >
+                          {sentTelegramAgentId === agent.agent_id ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                        </button>
+                        {sentTelegramAgentId === agent.agent_id && <span className="inline-toast">Sent!</span>}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Row 2: KPI stats */}
+                  <div className="flex gap-5 flex-wrap mb-2.5">
+                    <div>
+                      <p className="kpi-label">Players</p>
+                      <p className="text-sm font-semibold tabular-nums">{agent.players.length}</p>
+                    </div>
+                    <div>
+                      <p className="kpi-label">Total Profit</p>
+                      <p className={`text-sm font-semibold tabular-nums ${agent.total_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatNumber(agent.total_profit)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="kpi-label">Total Tips</p>
+                      <p className="text-sm font-semibold tabular-nums">{formatNumber(agent.total_tips)}</p>
+                    </div>
+                    <div>
+                      <p className="kpi-label">Agent Tips</p>
+                      <p className="text-sm font-bold tabular-nums text-primary">{formatNumber(agent.total_agent_tips)}</p>
+                    </div>
+                  </div>
+                  {/* Row 3: search box (full width, below stats) */}
+                  <TableSearchBox
+                    value={agentSearches[agent.agent_id] || ''}
+                    onChange={(value) => setAgentSearch(agent.agent_id, value)}
+                  />
+                </div>
+                <div className={`collapsible-wrapper ${isExpanded ? 'open' : ''}`}>
+                  <div className="collapsible-inner">
+                    <DataTable
+                      data={agent.players}
+                      columns={getDetailedColumns(groupBy)}
+                      isLoading={false}
+                      emptyMessage="No player data available"
+                      globalFilter={agentSearches[agent.agent_id] || ''}
+                      onGlobalFilterChange={(value) => setAgentSearch(agent.agent_id, value)}
+                      hideSearch={true}
+                    />
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {!isLoading && aggregatedData.length === 0 && agents.length === 0 && (
+        <div className="text-center text-muted-foreground py-12">
+          No agent report data available. Adjust filters or upload game data
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AgentReports;
+

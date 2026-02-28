@@ -1,0 +1,176 @@
+import axios from 'axios';
+
+// Update this with your backend URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('supabase_token');
+  
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  return config;
+});
+
+// Handle auth errors and network errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle network errors (backend not running)
+    if (!error.response && error.message) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.code === 'ERR_NETWORK') {
+        error.userMessage = 'Cannot connect to server. Please make sure the backend is running on http://localhost:8000';
+      }
+    }
+    
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      localStorage.removeItem('supabase_token');
+      error.userMessage = 'Session expired. Please log in again.';
+      window.location.href = '/login';
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// API functions
+export const getData = async (startDate, endDate, lookbackDays = null, clubCode = null) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  if (clubCode) params.club_code = clubCode;
+  const response = await api.get('/get_data', { params });
+  return response.data;
+};
+
+export const getAggregatedData = async (startDate, endDate, lookbackDays = null) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  const response = await api.get('/get_aggregated_data', { params });
+  return response.data;
+};
+
+export const getAgents = async () => {
+  const response = await api.get('/get_agents');
+  return response.data;
+};
+
+export const getPlayers = async () => {
+  const response = await api.get('/get_players');
+  return response.data;
+};
+
+export const getAgentReport = async (startDate, endDate, lookbackDays = null) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  const response = await api.get('/get_agent_report', { params });
+  return response.data;
+};
+
+export const getDetailedAgentReport = async (startDate, endDate, lookbackDays = null, groupBy = 'player_id') => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  params.group_by = groupBy;
+  const response = await api.get('/get_detailed_agent_report', { params });
+  return response.data;
+};
+
+export const getAgentReports = async (startDate, endDate, lookbackDays = null, groupBy = 'player_id') => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  params.group_by = groupBy;
+  const response = await api.get('/get_agent_reports', { params });
+  return response.data;
+};
+
+export const getDataErrors = async () => {
+  const response = await api.get('/get_data_errors');
+  return response.data;
+};
+
+export const getCreateUpdateHistory = async (startDate, endDate, lookbackDays = null, tableName = null, operationType = null) => {
+  const params = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  if (tableName) params.table_name = tableName;
+  if (operationType) params.operation_type = operationType;
+  const response = await api.get('/get_create_update_history', { params });
+  return response.data;
+};
+
+export const getPlayerHistory = async (startDate, endDate, playerIds, lookbackDays = null) => {
+  const params = {
+    player_ids: Array.isArray(playerIds) ? playerIds.join(',') : playerIds,
+  };
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  if (lookbackDays) params.lookback_days = lookbackDays;
+  const response = await api.get('/get_player_history', { params });
+  return response.data;
+};
+
+export const upsertAgent = async (agentData) => {
+  const response = await api.post('/agents/upsert', agentData);
+  return response.data;
+};
+
+export const upsertPlayer = async (playerData) => {
+  const response = await api.post('/players/upsert', playerData);
+  return response.data;
+};
+
+export const getDashboardData = async () => {
+  const response = await api.get('/get_dashboard_data');
+  return response.data;
+};
+
+export const sendTelegramMessage = async (agentId, message) => {
+  const response = await api.post('/send_telegram_message', {
+    agent_id: agentId,
+    message: message
+  });
+  return response.data;
+};
+
+export const getRealNames = async () => {
+  const response = await api.get('/get_real_names');
+  return response.data;
+};
+
+export const getDealRules = async () => {
+  const response = await api.get('/get_deal_rules');
+  return response.data;
+};
+
+export const upsertRealName = async (realNameData) => {
+  const response = await api.post('/real_names/upsert', realNameData);
+  return response.data;
+};
+
+export const upsertDealRule = async (dealRuleData) => {
+  const response = await api.post('/deal_rules/upsert', dealRuleData);
+  return response.data;
+};
+
+export default api;
+

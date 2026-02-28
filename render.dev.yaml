@@ -1,0 +1,69 @@
+services:
+  # FastAPI backend (dev)
+  - type: web
+    name: tiberius-api-dev
+    runtime: python
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: APP_ENV=development uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: development
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: GMAIL_USER_EMAIL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+  # Telegram bot (dev)
+  - type: worker
+    name: tiberius-telegram-bot-dev
+    runtime: python
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: APP_ENV=development python telegram_bot.py
+    envVars:
+      - key: APP_ENV
+        value: development
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+  # Email ingestor (dev)
+  - type: cron
+    name: tiberius-email-ingestor-dev
+    runtime: python
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: APP_ENV=development python email_ingestor.py
+    schedule: "*/15 * * * *"
+    envVars:
+      - key: APP_ENV
+        value: development
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: GMAIL_USER_EMAIL
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.0"

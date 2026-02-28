@@ -1,0 +1,7 @@
+[tool.setuptools]
+packages = ["data", "data.schemas"]
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
