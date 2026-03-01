@@ -75,9 +75,9 @@ function DealRules() {
   const handleEdit = (dealRule) => {
     setFormData({
       id: dealRule.id,
-      agent_id: dealRule.agent_id || '',
+      agent_id: String(dealRule.agent_id) || '',
       threshold: dealRule.threshold || '',
-      deal_percent: dealRule.deal_percent ? (dealRule.deal_percent * 100).toFixed(3) : '',
+      deal_percent: dealRule.deal_percent ? parseFloat((dealRule.deal_percent * 100).toFixed(2)) : '',
     });
     setIsUpdateMode(true);
     setIsFormOpen(true);
@@ -144,7 +144,7 @@ function DealRules() {
                 >
                   <option value="">Select Agent</option>
                   {agents.map((agent) => (
-                    <option key={agent.agent_id} value={agent.agent_id}>
+                    <option key={agent.agent_id} value={String(agent.agent_id)}>
                       {agent.agent_name} (ID: {agent.agent_id})
                     </option>
                   ))}
@@ -170,7 +170,7 @@ function DealRules() {
                   name="deal_percent"
                   value={formData.deal_percent}
                   onChange={handleChange}
-                  step="0.001"
+                  step="0.01"
                   min="0"
                   max="100"
                   required

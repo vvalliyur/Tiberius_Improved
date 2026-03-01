@@ -1,4 +1,5 @@
 import hashlib
+import random
 import polars as pl
 from datetime import datetime
 from pathlib import Path
@@ -8,6 +9,115 @@ from data.schemas.df_schemas import GAME_DATA_MAP
 
 TABLE_GAMES = 'games'
 TABLE_UPLOADED_CSVS = 'uploaded_csvs'
+
+
+def normalize_aggregated_csv(df: pl.DataFrame) -> pl.DataFrame:
+    """Normalize aggregated CSV schema to match the standard per-game schema."""
+    if 'CG Hands' not in df.columns or 'Rank' in df.columns:
+        return df
+
+    # Rename CG Hands -> Hands
+    df = df.rename({'CG Hands': 'Hands'})
+
+    # Detect minimal format: CG Hands present but no GameCode/DateStarted/GameType columns
+    is_minimal = 'GameCode' not in df.columns
+
+    if is_minimal:
+        # Minimal format: Player, ID, Hands, Tips, Profit only
+        # Use dummy defaults — user will manually adjust afterwards
+        game_code = str(-random.randint(1000000, 9999999))
+        date_started = '2000-01-01 00:00'
+        date_ended = '2001-01-01 00:00'
+        game_type = 'PLO4'
+    else:
+        # Standard aggregated format with GameCode, DateStarted, GameType
+        raw_game_code = str(df.select('GameCode').row(0)[0])
+        game_code = raw_game_code.split(',')[0].strip()
+
+        raw_date = str(df.select('DateStarted').row(0)[0])
+        if '~' in raw_date:
+            parts = raw_date.split('~')
+            date_started = parts[0].strip()
+            date_ended = parts[1].strip()
+        else:
+            date_started = raw_date.strip()
+            date_ended = raw_date.strip()
+
+        game_type = str(df.select('GameType').row(0)[0]).strip()
+
+    # TotalTips: sum of Tips column
+    total_tips = df.select(pl.col('Tips').cast(pl.Float64, strict=False).sum()).row(0)[0] or 0.0
+
+    df = df.with_columns([
+        pl.lit(game_code).alias('GameCode'),
+        pl.lit(date_started).alias('DateStarted'),
+        pl.lit(date_ended).alias('DateEnded'),
+        pl.lit(game_type).alias('GameType'),
+        pl.arange(1, df.height + 1).alias('Rank'),
+        pl.lit(0).alias('BuyIn'),
+        pl.lit('DATS').alias('ClubCode'),
+        pl.lit(10).alias('BigBlind'),
+        pl.lit(total_tips).alias('TotalTips'),
+    ])
+
+    # Drop EVCashout if present
+    if 'EVCashout' in df.columns:
+        df = df.drop('EVCashout')
+
+    return df
+
+
+def _get_next_unknown_counter(supabase: Client) -> int:
+    """Query the games table for the highest existing #UNKN ID and return the next number."""
+    try:
+        response = (
+            supabase.table(TABLE_GAMES)
+            .select('player_id')
+            .like('player_id', '#UNKN%')
+            .execute()
+        )
+        if response.data:
+            max_num = 0
+            for row in response.data:
+                pid = row['player_id']
+                suffix = pid.replace('#UNKN', '')
+                if suffix.isdigit():
+                    max_num = max(max_num, int(suffix))
+            return max_num + 1
+        return 1
+    except Exception:
+        return 1
+
+
+def rename_unknown_players(df: pl.DataFrame, supabase: Client) -> pl.DataFrame:
+    """Rename 'unknown player' entries to 'unknown player N' with unique IDs '#UNKNN'."""
+    if 'Player' not in df.columns:
+        return df
+
+    player_names = df.get_column('Player').to_list()
+    mask = [str(name).strip().lower() == 'unknown player' for name in player_names]
+
+    if not any(mask):
+        return df
+
+    counter = _get_next_unknown_counter(supabase)
+
+    new_names = list(player_names)
+    player_ids = df.get_column('ID').to_list()
+    new_ids = list(player_ids)
+
+    for i, is_unknown in enumerate(mask):
+        if is_unknown:
+            new_names[i] = f'unknown player {counter}'
+            new_ids[i] = f'#UNKN{counter}'
+            counter += 1
+
+    df = df.with_columns([
+        pl.Series('Player', new_names),
+        pl.Series('ID', new_ids),
+    ])
+
+    return df
 
 
 def calculate_csv_hash(csv_path: str | Path) -> str:
@@ -42,7 +152,8 @@ def mark_csv_as_uploaded(supabase: Client, csv_hash: str, filename: str, row_cou
 def upload_csv_to_games(
     supabase: Client,
     csv_path: str | Path,
-    filename: str | None = None
+    filename: str | None = None,
+    overrides: dict | None = None,
 ) -> dict:
 
     csv_path = Path(csv_path)
@@ -63,8 +174,19 @@ def upload_csv_to_games(
             'message': f"CSV '{filename}' has already been uploaded"
         }
     
+    # Try comma first; if it produces a single column, retry with semicolon
     df = pl.read_csv(csv_path)
-    
+    if df.width == 1 and ';' in df.columns[0]:
+        df = pl.read_csv(csv_path, separator=';')
+    df = normalize_aggregated_csv(df)
+
+    # Apply any caller-provided overrides (e.g. specific GameCode, dates, GameType)
+    if overrides:
+        override_exprs = [pl.lit(v).alias(k) for k, v in overrides.items()]
+        df = df.with_columns(override_exprs)
+
+    df = rename_unknown_players(df, supabase)
+
     if df.is_empty():
         raise ValueError('CSV file is empty')
     
