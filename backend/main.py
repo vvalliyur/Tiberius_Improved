@@ -762,11 +762,17 @@ async def upsert_deal_rule(deal_rule_data: UpsertDealRuleRequest, current_user: 
             check_response = supabase.table('agent_deal_percent_rules').select('*').eq('id', deal_rule_data.id).execute()
             if not check_response.data:
                 raise HTTPException(status_code=404, detail=f'Deal rule with ID {deal_rule_data.id} not found')
-            
-            response = supabase.table('agent_deal_percent_rules').update(data).eq('id', deal_rule_data.id).execute()
+
+            try:
+                response = supabase.table('agent_deal_percent_rules').update(data).eq('id', deal_rule_data.id).execute()
+            except Exception as update_err:
+                err_str = str(update_err).lower()
+                if 'unique' in err_str or 'duplicate' in err_str or 'unique_agent_player_threshold' in err_str:
+                    raise HTTPException(status_code=409, detail=f'A deal rule already exists for this agent at threshold {deal_rule_data.threshold}')
+                raise
             if not response.data:
                 raise HTTPException(status_code=500, detail='Failed to update deal rule')
-            
+
             log_operation(
                 supabase=supabase,
                 user=current_user,
@@ -775,13 +781,19 @@ async def upsert_deal_rule(deal_rule_data: UpsertDealRuleRequest, current_user: 
                 record_id=deal_rule_data.id,
                 operation_data={'updated_fields': data, 'id': deal_rule_data.id}
             )
-            
+
             return {'data': response.data[0], 'message': 'Deal rule updated successfully'}
         else:
-            response = supabase.table('agent_deal_percent_rules').insert(data).execute()
+            try:
+                response = supabase.table('agent_deal_percent_rules').insert(data).execute()
+            except Exception as insert_err:
+                err_str = str(insert_err).lower()
+                if 'unique' in err_str or 'duplicate' in err_str or 'unique_agent_player_threshold' in err_str:
+                    raise HTTPException(status_code=409, detail=f'A deal rule already exists for this agent at threshold {deal_rule_data.threshold}')
+                raise
             if not response.data:
                 raise HTTPException(status_code=500, detail='Failed to create deal rule')
-            
+
             created_id = response.data[0].get('id')
             log_operation(
                 supabase=supabase,
@@ -791,7 +803,7 @@ async def upsert_deal_rule(deal_rule_data: UpsertDealRuleRequest, current_user: 
                 record_id=created_id,
                 operation_data={'created_data': response.data[0]}
             )
-            
+
             return {'data': response.data[0], 'message': 'Deal rule created successfully'}
     except HTTPException:
         raise
